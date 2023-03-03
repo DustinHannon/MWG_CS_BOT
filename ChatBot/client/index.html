@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Morgan White Group | Customer Service</title>
+  <link rel="icon" type="image/png" href="images/favicon.ico">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div id="root" class="flex flex-col min-h-screen p-16">
+    <header>
+      <h1 class="text-center text-2xl font-bold my-4">Morgan White Group | Customer Service</h1>
+    </header>
+    <main class="grow flex flex-col items-center justify-center">
+      <section class="w-full max-w-3xl border-2 border-gray-200 rounded-md p-4 h-96 overflow-scroll">
+        <ul id="dialogue" class="flex flex-col space-y-4">
+          <li class="bg-gray-100 rounded p-2 w-fit self-start break-words">
+            Welcome to Morgan White Group's Chat Bot!👋 I can help you with your support questions. Please enter a simple question below and I will try my best to help! <br>
+          </li>
+        </ul>
+      </section>
+      <section class="my-4 w-full max-w-3xl">
+        <form id="prompt-form" class="flex flex-col">
+          <label for="prompt-input" class="block text-gray-700 text-sm font-bold mb-2">Enter your support question:</label>
+          <textarea id="prompt-input" name="prompt" rows="3" placeholder="What insurance do you sell?" class="appearance-none border-2 border-gray-200 rounded w-full py-2 px-3 text-gray-700"></textarea>
+          <button type="submit" class="my-4 bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">Send</button>
+        </form>
+      </section>
+    </main>
+    <footer>
+      <div class="text-center mt-5 flex flex-col items-center space-y-2">
+        <p class="text-gray-500 font-mono text-sm">A CS ChatBot by</p>
+        <a href="https://morganwhite.com" class="text-indigo-500 font-semibold underline">
+          <img class="h-16" src="images/logo.png" alt="Morgan White Group">
+        </a>
+      </div>
+    </footer>
+    <script src="app/index.js" type="module"></script>
+  </div>
+</body>
+
+</html>
