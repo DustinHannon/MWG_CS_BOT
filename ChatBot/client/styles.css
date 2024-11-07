@@ -1,61 +1,64 @@
-/* Apply a background color to the page */
+:root {
+    --primary-color: #4f46e5;
+    --secondary-color: #5039e9;
+    --background-color: #052f58;
+    --text-color: #fff;
+    --button-hover-color: #3b3bdb;
+}
+
 body {
-    background-color: #052f58;
-  }
-  
-  /* Center the content of the root element */
-  #root {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-family: Arial, sans-serif;
+}
+
+#root {
     display: flex;
-    color: #fff;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     min-height: 100vh;
     padding: 2rem;
-  }
-  
-  /* Style the header */
-  header {
-    color: #fff;
+}
+
+header {
     margin-bottom: 2rem;
     text-align: center;
-  }
-  
-  /* Style the prompt form */
-  form {
+}
+
+form {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-  }
-  
-  /* Style the prompt input */
-  textarea {
+}
+
+textarea {
     margin-bottom: 1rem;
-  }
-  
-  /* Style the send button */
-  button[type="submit"] {
-    background-color: #4f46e5;
-    color: #fff;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    border: 2px solid var(--primary-color);
+}
+
+button[type="submit"] {
+    background-color: var(--primary-color);
+    color: var(--text-color);
     font-weight: bold;
     padding: 0.5rem 1rem;
     border-radius: 0.25rem;
+    border: none;
+    cursor: pointer;
     transition: background-color 0.2s ease-in-out;
-  }
-  
-  button[type="submit"]:hover {
-    background-color: #5039e9;
-  }
-  
-  /* Style the footer */
-  footer {
+}
+
+button[type="submit"]:hover {
+    background-color: var(--button-hover-color);
+}
+
+footer {
     margin-top: 2rem;
-    color: #fff;
     text-align: center;
-  }
-  
-  /* Style the logo image in the footer */
-  footer img {
+}
+
+footer img {
     height: 4rem;
-  }
-  
+}
