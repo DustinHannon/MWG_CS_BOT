@@ -22,28 +22,38 @@ app.use(express.static(path.join(process.cwd(), 'client')))
 app.post('/api/openai', async (req, res) => {
     const { question } = req.body;
 
-    // send a request to the OpenAI API with the user's prompt
-    const response = await fetch('https://api.openai.com/v1/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        // construct the request payload
-        // to be sent to the OpenAI API,
-        // passing in an 'enriched' version
-        // of the user's prompt
-        body: JSON.stringify({
-            model: 'text-davinci-003',
-            prompt: enrichUserPromptWithContext(question),
-            // the maximum number of tokens/words the bot should return
-            // in response to a given prompt
-            max_tokens: 100,
-        }),
-    });
-    // parse the response from OpenAI as json
-    const data = await response.json();
-    res.json({ data: data.choices[0].text });
+    try {
+        // send a request to the OpenAI API with the user's prompt
+        const response = await fetch('https://api.openai.com/v1/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            },
+            // construct the request payload
+            // to be sent to the OpenAI API,
+            // passing in an 'enriched' version
+            // of the user's prompt
+            body: JSON.stringify({
+                model: 'text-davinci-003',
+                prompt: enrichUserPromptWithContext(question),
+                // the maximum number of tokens/words the bot should return
+                // in response to a given prompt
+                max_tokens: 100,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        // parse the response from OpenAI as json
+        const data = await response.json();
+        res.json({ data: data.choices[0].text });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
 // set the port to listen on, which is either the port specified in the .env or 3000 if no port is specified
