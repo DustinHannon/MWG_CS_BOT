@@ -34,14 +34,39 @@ function addUserQuestionToDialogueBox(question) {
     userQuestion.innerText = question;
     document.getElementById('dialogue').appendChild(userQuestion);
     document.getElementById('prompt-input').value = '';
+    scrollToBottom();
 }
 
 // add the chatbot's response to the dialogue box
 function addBotResponseToDialogueBox(response) {
     const botResponse = document.createElement('li');
     botResponse.classList.add('bg-gray-500', 'text-white', 'rounded', 'p-2', 'w-fit', 'self-start');
-    botResponse.innerText = response.trim();
+
+    // Convert URLs in the response to clickable links
+    const urlRegex = /(https?:\/\/[^\s]+[^\s.,!?])/g;
+    const formattedResponse = response.replace(urlRegex, (url) => {
+        // Check if the URL ends with punctuation and remove it
+        const match = url.match(/(https?:\/\/[^\s]+)([.,!?])?/);
+        const cleanUrl = match[1];
+        const punctuation = match[2] || '';
+        return `<a href="${cleanUrl}" target="_blank" class="text-indigo-500 underline">${cleanUrl}</a>${punctuation}`;
+    });
+
+    botResponse.innerHTML = formattedResponse.trim();
     document.getElementById('dialogue').appendChild(botResponse);
+    scrollToBottom();
+}
+
+// scroll to the bottom of the chat container
+function scrollToBottom() {
+    const chatContainer = document.getElementById('chat-container');
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+// toggle dark mode
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    document.getElementById('chat-container').classList.toggle('dark-mode');
 }
 
 window.onload = () => {
@@ -50,4 +75,14 @@ window.onload = () => {
         const question = document.getElementById('prompt-input').value;
         handleSubmitQuestion(question);
     });
+
+    document.getElementById('prompt-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            const question = document.getElementById('prompt-input').value;
+            handleSubmitQuestion(question);
+        }
+    });
+
+    document.getElementById('toggle-dark-mode').addEventListener('click', toggleDarkMode);
 };
