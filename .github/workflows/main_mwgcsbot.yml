@@ -37,7 +37,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: release.zip
+          path: ./ChatBot/release.zip
 
   deploy:
     runs-on: ubuntu-latest
@@ -55,7 +55,9 @@ jobs:
           name: node-app
 
       - name: Unzip artifact for deployment
-        run: unzip release.zip
+        run: |
+          unzip release.zip
+          rm release.zip
       
       - name: Login to Azure
         uses: azure/login@v2
@@ -71,4 +73,3 @@ jobs:
           app-name: 'MWGCSBot'
           slot-name: 'Production'
           package: .
-          
