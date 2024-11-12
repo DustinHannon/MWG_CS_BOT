@@ -40,7 +40,7 @@ app.post('/api/openai', async (req, res) => {
                     { role: 'system', content: 'You are a helpful assistant.' },
                     { role: 'user', content: enrichUserPromptWithContext(question) }
                 ],
-                max_tokens: 500, // Increase this value to allow for longer replies
+                max_tokens: 600, // Increase this value to allow for longer replies
             }),
         });
 
