@@ -1,44 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <title>Morgan White Group | Customer Service</title>
-  <link rel="icon" type="image/png" href="images/favicon.ico">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morgan White Group | AI Assistant</title>
+    <link rel="icon" type="image/png" href="images/favicon.ico">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
+<body>
+    <div id="root">
+        <header>
+            <h1>Morgan White Group Assistant</h1>
+            <button id="toggle-dark-mode" aria-label="Toggle dark mode">
+                <span>Dark Mode</span>
+            </button>
+        </header>
 
-<body class="light-mode">
-  <div id="root" class="flex flex-col min-h-screen p-16">
-    <header class="flex justify-between items-center mb-4">
-      <h1 class="text-2xl font-bold">Morgan White Group | Customer Service</h1>
-      <button id="toggle-dark-mode" class="bg-gray-800 text-white py-2 px-4 rounded">Toggle Dark Mode</button>
-    </header>
-    <main class="grow flex flex-col items-center justify-center">
-      <section class="w-full border-2 border-gray-200 rounded-md p-4 h-96 overflow-y-auto" id="chat-container">
-        <ul id="dialogue" class="flex flex-col space-y-4">
-          <li class="bg-gray-100 rounded p-2 w-fit self-start break-words">
-            Welcome to Morgan White Group's Chat Bot!👋 I can help you with your support questions.<br>
-            Please enter a simple question below and I will try my best to help! <br>
-          </li>
-        </ul>
-      </section>
-      <form id="prompt-form" class="flex items-center w-full mt-4">
-        <textarea id="prompt-input" name="prompt" rows="1" placeholder="What insurance do you sell?" class="appearance-none border-2 border-gray-200 rounded-l w-full py-2 px-3 text-gray-700"></textarea>
-        <button type="submit" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-r">Send</button>
-      </form>
-    </main>
-    <footer>
-      <div class="text-center mt-5 flex flex-col items-center space-y-2">
-        <p class="text-gray-500 font-mono text-sm">A CS ChatBot by</p>
-        <a href="https://morganwhite.com" class="text-indigo-500 font-semibold underline">
-          <img class="h-16" src="images/logo.png" alt="Morgan White Group">
-        </a>
-      </div>
-    </footer>
+        <main>
+            <div id="chat-container" role="log" aria-live="polite">
+                <ul id="dialogue">
+                    <li class="bot-message">
+                        <div class="message-content">
+                            <p>👋 Hello! I'm Morgan White Group's AI Assistant. I'm here to help you with insurance-related questions and support.</p>
+                            <p>How can I assist you today?</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <form id="prompt-form" aria-label="Chat input">
+                <div class="input-container">
+                    <textarea 
+                        id="prompt-input"
+                        name="prompt"
+                        placeholder="Type your message here..."
+                        rows="1"
+                        aria-label="Message input"
+                    ></textarea>
+                    <button type="submit" aria-label="Send message">
+                        Send
+                    </button>
+                </div>
+            </form>
+        </main>
+
+        <footer>
+            <a href="https://morganwhite.com" target="_blank" rel="noopener noreferrer">
+                <img src="images/logo.png" alt="Morgan White Group Logo">
+            </a>
+        </footer>
+    </div>
     <script src="app/index.js" type="module"></script>
-  </div>
 </body>
-
 </html>
