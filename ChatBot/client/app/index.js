@@ -1,7 +1,7 @@
-// handle when the user submits a question through the form
+// Handle form submission
 async function handleSubmitQuestion(question) {
-    if (!question) {
-        return alert('Please enter your support question in the box below.');
+    if (!question.trim()) {
+        return;
     }
 
     addUserQuestionToDialogueBox(question);
@@ -23,66 +23,125 @@ async function handleSubmitQuestion(question) {
         addBotResponseToDialogueBox(data);
     } catch (error) {
         console.error('Error:', error);
-        alert('There was an error processing your request. Please try again later.');
+        addErrorMessageToDialogueBox();
     }
 }
 
-// add the user's question to the dialogue box
+// Add user message to chat
 function addUserQuestionToDialogueBox(question) {
     const userQuestion = document.createElement('li');
-    userQuestion.classList.add('bg-indigo-500', 'text-white', 'rounded', 'p-2', 'w-fit', 'self-end', 'break-words');
-    userQuestion.innerText = question;
+    userQuestion.className = 'user-message';
+    
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    messageContent.textContent = question;
+    
+    userQuestion.appendChild(messageContent);
     document.getElementById('dialogue').appendChild(userQuestion);
-    document.getElementById('prompt-input').value = '';
+    
+    // Reset input and adjust its height
+    const input = document.getElementById('prompt-input');
+    input.value = '';
+    adjustTextareaHeight(input);
+    
     scrollToBottom();
 }
 
-// add the chatbot's response to the dialogue box
+// Add bot response to chat
 function addBotResponseToDialogueBox(response) {
     const botResponse = document.createElement('li');
-    botResponse.classList.add('bg-gray-500', 'text-white', 'rounded', 'p-2', 'w-fit', 'self-start');
-
-    // Convert URLs in the response to clickable links
+    botResponse.className = 'bot-message';
+    
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    
+    // Convert URLs to clickable links
     const urlRegex = /(https?:\/\/[^\s]+[^\s.,!?])/g;
     const formattedResponse = response.replace(urlRegex, (url) => {
-        // Check if the URL ends with punctuation and remove it
         const match = url.match(/(https?:\/\/[^\s]+)([.,!?])?/);
         const cleanUrl = match[1];
         const punctuation = match[2] || '';
-        return `<a href="${cleanUrl}" target="_blank" class="text-indigo-500 underline">${cleanUrl}</a>${punctuation}`;
+        return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer">${cleanUrl}</a>${punctuation}`;
     });
-
-    botResponse.innerHTML = formattedResponse.trim();
+    
+    messageContent.innerHTML = formattedResponse.trim();
+    botResponse.appendChild(messageContent);
     document.getElementById('dialogue').appendChild(botResponse);
     scrollToBottom();
 }
 
-// scroll to the bottom of the chat container
+// Add error message to chat
+function addErrorMessageToDialogueBox() {
+    const errorMessage = document.createElement('li');
+    errorMessage.className = 'bot-message error';
+    
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    messageContent.innerHTML = 'I apologize, but I encountered an error processing your request. Please try again.';
+    
+    errorMessage.appendChild(messageContent);
+    document.getElementById('dialogue').appendChild(errorMessage);
+    scrollToBottom();
+}
+
+// Auto-adjust textarea height
+function adjustTextareaHeight(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+}
+
+// Scroll chat to bottom
 function scrollToBottom() {
     const chatContainer = document.getElementById('chat-container');
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-// toggle dark mode
+// Toggle dark mode
 function toggleDarkMode() {
     document.body.classList.toggle('dark-mode');
-    document.getElementById('chat-container').classList.toggle('dark-mode');
+    
+    // Save preference
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    localStorage.setItem('darkMode', isDarkMode);
 }
 
+// Initialize
 window.onload = () => {
-    document.getElementById('prompt-form').addEventListener('submit', (e) => {
+    // Set up form submission
+    const form = document.getElementById('prompt-form');
+    const input = document.getElementById('prompt-input');
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    form.addEventListener('submit', (e) => {
         e.preventDefault();
-        const question = document.getElementById('prompt-input').value;
-        handleSubmitQuestion(question);
+        handleSubmitQuestion(input.value);
     });
 
-    document.getElementById('prompt-input').addEventListener('keydown', (e) => {
+    // Handle input changes
+    input.addEventListener('input', () => {
+        adjustTextareaHeight(input);
+        submitButton.disabled = !input.value.trim();
+    });
+
+    input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            const question = document.getElementById('prompt-input').value;
-            handleSubmitQuestion(question);
+            if (input.value.trim()) {
+                handleSubmitQuestion(input.value);
+            }
         }
     });
 
+    // Set up dark mode
     document.getElementById('toggle-dark-mode').addEventListener('click', toggleDarkMode);
+    
+    // Load saved dark mode preference
+    const savedDarkMode = localStorage.getItem('darkMode');
+    if (savedDarkMode === 'true') {
+        document.body.classList.add('dark-mode');
+    }
+
+    // Initial textarea height
+    adjustTextareaHeight(input);
+    submitButton.disabled = true;
 };
