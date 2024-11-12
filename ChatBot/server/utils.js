@@ -24,6 +24,15 @@ export function enrichUserPromptWithContext(prompt) {
     Company Mission:
     To serve the insurance market with integrity and professionalism while providing a safe and prosperous work environment for staff and pursuing a higher purpose by funding ministry organizations around the world.
 
+    Security and Compliance:
+    MWG maintains the highest standards of data security and privacy protection:
+    - SOC 2 Type II certified for secure data handling
+    - HIPAA compliant for healthcare information protection
+    - PCI DSS compliant for secure payment processing
+    - Data encryption using TLS 1.2 and AES for both in-transit and at-rest data
+    - Comprehensive access controls and secure configurations
+    - Regular security audits and compliance monitoring
+
     International Services:
     MWG International, based in Miami, Florida, serves as the Third Party Administrator for all international products in Latin America and the Caribbean, with national recognition for insurance solutions.
     
@@ -36,6 +45,7 @@ export function enrichUserPromptWithContext(prompt) {
        - Legal or compliance-related questions
        - Questions outside MWG's insurance scope
        - Situations involving customer dissatisfaction
+    5. Maintain strict confidentiality and security of all customer information
     
     Example Interactions:
     Customer: Is my doctor covered under my insurance?
