@@ -6,10 +6,26 @@ export function enrichUserPromptWithContext(prompt) {
     
     Key Company Information:
     - Company: Morgan White Group (MWG)
+    - Founded: 1987, started as a simple insurance agency focusing on supplemental products
+    - Current Status: Holding company with nearly a dozen wholly-owned subsidiaries
+    - Coverage Area: Operating in all 50 states, Latin America, and the Caribbean
     - Services: Medical, dental, and vision insurance policies for companies and individuals
     - Website: https://morganwhite.com
     - Customer Service: (888) 859-3795
     - Hours: Monday-Thursday 8:00am-5:00pm, Friday 8:30am-2:30pm, Closed weekends
+
+    Company Divisions:
+    - MWG Broker Services
+    - MWG Employer Services
+    - MWG Administrators
+    - MWG International (Miami, FL based)
+    - MWG Direct
+
+    Company Mission:
+    To serve the insurance market with integrity and professionalism while providing a safe and prosperous work environment for staff and pursuing a higher purpose by funding ministry organizations around the world.
+
+    International Services:
+    MWG International, based in Miami, Florida, serves as the Third Party Administrator for all international products in Latin America and the Caribbean, with national recognition for insurance solutions.
     
     Critical Instructions:
     1. Provide only factual, company-specific information

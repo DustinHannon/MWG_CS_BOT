@@ -96,13 +96,20 @@ function scrollToBottom() {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
+// Update dark mode button text
+function updateDarkModeButtonText(isDarkMode) {
+    const buttonText = document.querySelector('#toggle-dark-mode span');
+    buttonText.textContent = isDarkMode ? 'Light Mode' : 'Dark Mode';
+}
+
 // Toggle dark mode
 function toggleDarkMode() {
     document.body.classList.toggle('dark-mode');
     
-    // Save preference
+    // Save preference and update button text
     const isDarkMode = document.body.classList.contains('dark-mode');
     localStorage.setItem('darkMode', isDarkMode);
+    updateDarkModeButtonText(isDarkMode);
 }
 
 // Initialize
@@ -140,6 +147,8 @@ window.onload = () => {
     if (savedDarkMode === 'true') {
         document.body.classList.add('dark-mode');
     }
+    // Set initial button text based on current mode
+    updateDarkModeButtonText(savedDarkMode === 'true');
 
     // Initial textarea height
     adjustTextareaHeight(input);
