@@ -77,8 +77,10 @@ header {
 }
 
 .fixed-logo img {
-  height: 4rem;
+  height: 8rem; /* Doubled from 4rem */
   transition: all 0.2s ease;
+  position: relative; /* Added to ensure proper stacking */
+  z-index: 1000; /* Added to keep logo above scrolling content */
 }
 
 header h1 {
@@ -112,11 +114,11 @@ main {
   display: flex;
   flex-direction: column;
   max-width: var(--max-width);
-  margin: calc(var(--header-height) + 6rem) auto 0;
+  margin: calc(var(--header-height) + 10rem) auto 0; /* Increased margin to accommodate larger logo */
   width: 100%;
   padding: 1rem;
   position: relative;
-  height: calc(100vh - var(--header-height) - var(--footer-height) - 6rem);
+  height: calc(100vh - var(--header-height) - var(--footer-height) - 10rem);
 }
 
 #chat-container {
@@ -307,6 +309,17 @@ footer {
   padding: 0 1rem;
 }
 
+/* Privacy Policy Link */
+.privacy-link {
+  color: var(--accent-color);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.privacy-link:hover {
+  text-decoration: underline;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   :root {
@@ -328,7 +341,7 @@ footer {
   }
 
   .fixed-logo img {
-    height: 3.5rem;
+    height: 7rem; /* Adjusted for mobile but still larger than original */
   }
 
   header h1 {
@@ -382,7 +395,7 @@ footer {
   }
 
   .fixed-logo img {
-    height: 3rem;
+    height: 6rem; /* Adjusted for mobile but still larger than original */
   }
 
   header h1 {
