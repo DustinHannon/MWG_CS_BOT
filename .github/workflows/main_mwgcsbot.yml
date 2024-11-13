@@ -73,3 +73,9 @@ jobs:
           app-name: 'MWGCSBot'
           slot-name: 'Production'
           package: .
+
+      - name: Configure App Settings
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: 'MWGCSBot'
+          app-settings-json: '[{ "name": "OPENAI_API_KEY", "value": "${{ secrets.OPENAI_API_KEY }}" }]'
