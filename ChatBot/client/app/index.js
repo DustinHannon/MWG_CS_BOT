@@ -1,12 +1,28 @@
+// State management
+let isProcessing = false;
+
 // Handle form submission
 async function handleSubmitQuestion(question) {
-    if (!question.trim()) {
+    if (!question.trim() || isProcessing) {
         return;
     }
 
-    addUserQuestionToDialogueBox(question);
+    const form = document.getElementById('prompt-form');
+    const input = document.getElementById('prompt-input');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const inputContainer = form.querySelector('.input-container');
+    const errorMessage = form.querySelector('.error-message');
 
     try {
+        // Set processing state
+        isProcessing = true;
+        inputContainer.classList.add('loading');
+        input.disabled = true;
+        submitButton.disabled = true;
+        errorMessage.style.display = 'none';
+
+        addUserQuestionToDialogueBox(question);
+
         const response = await fetch('/api/openai', {
             method: 'POST',
             headers: {
@@ -16,14 +32,27 @@ async function handleSubmitQuestion(question) {
         });
 
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+            throw new Error(
+                response.status === 429 
+                    ? 'Please wait a moment before sending another message.' 
+                    : 'Network response was not ok'
+            );
         }
 
         const { data } = await response.json();
         addBotResponseToDialogueBox(data);
     } catch (error) {
         console.error('Error:', error);
-        addErrorMessageToDialogueBox();
+        addErrorMessageToDialogueBox(error.message);
+        form.classList.add('error');
+        errorMessage.textContent = error.message;
+    } finally {
+        // Reset processing state
+        isProcessing = false;
+        inputContainer.classList.remove('loading');
+        input.disabled = false;
+        input.focus();
+        submitButton.disabled = !input.value.trim();
     }
 }
 
@@ -71,16 +100,16 @@ function addBotResponseToDialogueBox(response) {
 }
 
 // Add error message to chat
-function addErrorMessageToDialogueBox() {
-    const errorMessage = document.createElement('li');
-    errorMessage.className = 'bot-message error';
+function addErrorMessageToDialogueBox(errorMessage = 'An error occurred. Please try again.') {
+    const errorElement = document.createElement('li');
+    errorElement.className = 'bot-message error';
     
     const messageContent = document.createElement('div');
     messageContent.className = 'message-content';
-    messageContent.innerHTML = 'I apologize, but I encountered an error processing your request. Please try again.';
+    messageContent.innerHTML = errorMessage;
     
-    errorMessage.appendChild(messageContent);
-    document.getElementById('dialogue').appendChild(errorMessage);
+    errorElement.appendChild(messageContent);
+    document.getElementById('dialogue').appendChild(errorElement);
     scrollToBottom();
 }
 
@@ -121,19 +150,24 @@ window.onload = () => {
 
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-        handleSubmitQuestion(input.value);
+        if (!isProcessing) {
+            handleSubmitQuestion(input.value);
+        }
     });
 
     // Handle input changes
     input.addEventListener('input', () => {
         adjustTextareaHeight(input);
-        submitButton.disabled = !input.value.trim();
+        if (!isProcessing) {
+            submitButton.disabled = !input.value.trim();
+            form.classList.remove('error');
+        }
     });
 
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            if (input.value.trim()) {
+            if (input.value.trim() && !isProcessing) {
                 handleSubmitQuestion(input.value);
             }
         }

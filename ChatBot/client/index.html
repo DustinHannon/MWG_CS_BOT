@@ -42,10 +42,16 @@
                         rows="1"
                         aria-label="Message input"
                     ></textarea>
+                    <div class="loading-dots" aria-hidden="true">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
                     <button type="submit" aria-label="Send message">
                         Send
                     </button>
                 </div>
+                <div class="error-message" role="alert"></div>
             </form>
 
             <div class="links-container">

@@ -41,6 +41,8 @@ ChatBot/
    ```bash
    npm start
    ```
+## Temp Azure Web App
+https://mwgcsbot-apdcavd6ameddtdb.southcentralus-01.azurewebsites.net
 
 ## License
 This project is licensed under the terms included in the LICENSE file.
