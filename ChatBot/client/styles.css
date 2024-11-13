@@ -21,7 +21,7 @@
   --primary-bg: rgba(32, 33, 35, 0.9);
   --secondary-bg: rgba(52, 53, 65, 0.9);
   --primary-text: #ffffff;
-  --secondary-text: #ececf1;
+  --secondary-text: #ffffff;
   --border-color: #4a4b53;
   --chat-bot-bg: rgba(68, 70, 84, 0.9);
   --chat-user-bg: rgba(52, 53, 65, 0.9);
@@ -367,8 +367,8 @@ button[type="submit"]:disabled {
   gap: 0.5rem;
   justify-content: center;
   flex-wrap: wrap;
-  background-color: var(--primary-bg);
-  border-top: 1px solid var(--border-color);
+  background-color: transparent;
+  border: none;
   border-radius: 1rem;
   z-index: 5;
 }
