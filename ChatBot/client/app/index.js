@@ -12,7 +12,6 @@ function sanitizeText(text) {
 function formatUrl(url, punctuation = '') {
     try {
         const urlObj = new URL(url);
-        // Allow all valid URLs but add security attributes
         return `<a href="${url}" 
             target="_blank" 
             rel="noopener noreferrer nofollow"
@@ -25,6 +24,10 @@ function formatUrl(url, punctuation = '') {
 
 // Convert markdown-like syntax to HTML with enhanced formatting
 function formatResponse(text) {
+    if (!text || typeof text !== 'string') {
+        return 'An error occurred while formatting the response.';
+    }
+
     // First escape any HTML tags in the original text
     let sanitizedText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
     
@@ -41,121 +44,67 @@ function formatResponse(text) {
     sanitizedText = sanitizedText.replace(/^## (.*?)$/gm, '<h2>$1</h2>');
     sanitizedText = sanitizedText.replace(/^# (.*?)$/gm, '<h1>$1</h1>');
     
-    // Format nested lists
-    const listRegex = /^( *)([-*+]|\d+\.) (.*?)$/gm;
-    const lines = sanitizedText.split('\n');
+    // Format lists safely
+    const lines = sanitizedText.split('\n').map(line => line || ' ');
     let inList = false;
-    let currentLevel = 0;
     let listType = '';
+    let formattedLines = [];
     
-    sanitizedText = lines.map((line, index) => {
-        const listMatch = line.match(listRegex);
-        if (listMatch) {
-            const [, indent, marker, content] = listMatch;
-            const level = indent.length;
-            const isOrdered = /^\d+\./.test(marker);
-            const listClass = isOrdered ? 'numbered-item' : 'bullet-point';
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const bulletMatch = line.match(/^[-*] (.+)/);
+        const numberMatch = line.match(/^\d+\. (.+)/);
+        
+        if (bulletMatch || numberMatch) {
+            const content = (bulletMatch || numberMatch)[1];
+            const isOrdered = !!numberMatch;
             
             if (!inList) {
                 inList = true;
-                currentLevel = level;
                 listType = isOrdered ? 'ol' : 'ul';
-                return `<${listType} class="formatted-list level-${level}"><li class="${listClass}">${content}</li>`;
+                formattedLines.push(`<${listType} class="formatted-list">`);
             }
             
-            if (level > currentLevel) {
-                currentLevel = level;
-                listType = isOrdered ? 'ol' : 'ul';
-                return `<${listType} class="formatted-list level-${level}"><li class="${listClass}">${content}</li>`;
+            formattedLines.push(`<li class="${isOrdered ? 'numbered-item' : 'bullet-point'}">${content}</li>`);
+        } else {
+            if (inList) {
+                formattedLines.push(`</${listType}>`);
+                inList = false;
             }
-            
-            if (level < currentLevel) {
-                const closeTags = '</li></' + listType + '>'.repeat((currentLevel - level) / 2);
-                currentLevel = level;
-                return `${closeTags}<li class="${listClass}">${content}`;
-            }
-            
-            return `</li><li class="${listClass}">${content}`;
+            formattedLines.push(line);
         }
-        
-        if (inList) {
-            inList = false;
-            return `</li></${listType}>${line}`;
-        }
-        
-        return line;
+    }
+    
+    if (inList) {
+        formattedLines.push(`</${listType}>`);
+    }
+    
+    sanitizedText = formattedLines.join('\n');
+    
+    // Format code blocks safely
+    sanitizedText = sanitizedText.replace(/```([\s\S]*?)```/g, (match, code) => {
+        return `<pre><code>${code.trim()}</code></pre>`;
+    });
+    
+    // Format inline code safely
+    sanitizedText = sanitizedText.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+    
+    // Format bold text safely
+    sanitizedText = sanitizedText.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    
+    // Format italic text safely
+    sanitizedText = sanitizedText.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    
+    // Format paragraphs safely
+    sanitizedText = sanitizedText.split('\n\n').map(para => {
+        para = para.trim();
+        return para ? `<p>${para}</p>` : '';
     }).join('\n');
-    
-    // Format tables
-    const tableRegex = /^\|(.+)\|$/gm;
-    const headerSeparatorRegex = /^\|(?:[-:]+\|)+$/gm;
-    let inTable = false;
-    
-    lines.forEach((line, index) => {
-        if (tableRegex.test(line)) {
-            if (index + 1 < lines.length && headerSeparatorRegex.test(lines[index + 1])) {
-                // Table header
-                const cells = line.split('|').slice(1, -1);
-                sanitizedText = sanitizedText.replace(line, 
-                    `<table class="formatted-table"><thead><tr>${
-                        cells.map(cell => `<th>${cell.trim()}</th>`).join('')
-                    }</tr></thead><tbody>`);
-                inTable = true;
-            } else if (inTable) {
-                // Table row
-                const cells = line.split('|').slice(1, -1);
-                sanitizedText = sanitizedText.replace(line,
-                    `<tr>${
-                        cells.map(cell => `<td>${cell.trim()}</td>`).join('')
-                    }</tr>`);
-            }
-        } else if (inTable) {
-            sanitizedText = sanitizedText.replace(line, '</tbody></table>' + line);
-            inTable = false;
-        }
-    });
-    
-    // Format code blocks with syntax highlighting placeholder
-    sanitizedText = sanitizedText.replace(/\`\`\`(\w+)?\n(.*?)\`\`\`/gs, (match, lang, code) => {
-        return `<pre><code class="language-${lang || 'plaintext'}">${code.trim()}</code></pre>`;
-    });
-    
-    // Format inline code
-    sanitizedText = sanitizedText.replace(/\`(.*?)\`/g, '<code class="inline-code">$1</code>');
-    
-    // Format bold text
-    sanitizedText = sanitizedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    
-    // Format italic text
-    sanitizedText = sanitizedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    
-    // Format paragraphs with proper spacing
-    sanitizedText = sanitizedText.replace(/\n\n(.*?)(?=\n\n|$)/g, '<p>$1</p>');
     
     // Handle single newlines within paragraphs
     sanitizedText = sanitizedText.replace(/([^\n])\n([^\n])/g, '$1<br>$2');
     
     return sanitizedText;
-}
-
-// Validate input with enhanced security
-function validateInput(input) {
-    if (!input || typeof input !== 'string') {
-        return false;
-    }
-    if (input.length > 2000) { // Increased limit for longer messages
-        return false;
-    }
-    // Check for suspicious patterns
-    const suspiciousPatterns = [
-        /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-        /javascript:/gi,
-        /data:/gi,
-        /vbscript:/gi,
-        /on\w+=/gi,
-        /style\s*=\s*"[^"]*expression\s*\(/gi
-    ];
-    return !suspiciousPatterns.some(pattern => pattern.test(input));
 }
 
 // Handle form submission
@@ -275,13 +224,6 @@ function addBotResponseToDialogueBox(response) {
     botResponse.appendChild(messageContent);
     document.getElementById('dialogue').appendChild(botResponse);
     
-    // Initialize syntax highlighting if available
-    if (window.Prism) {
-        messageContent.querySelectorAll('pre code').forEach((block) => {
-            Prism.highlightElement(block);
-        });
-    }
-    
     scrollToBottom();
 }
 
@@ -299,6 +241,25 @@ function addErrorMessageToDialogueBox(errorMessage = 'An error occurred. Please 
     errorElement.appendChild(messageContent);
     document.getElementById('dialogue').appendChild(errorElement);
     scrollToBottom();
+}
+
+// Validate input with enhanced security
+function validateInput(input) {
+    if (!input || typeof input !== 'string') {
+        return false;
+    }
+    if (input.length > 2000) {
+        return false;
+    }
+    const suspiciousPatterns = [
+        /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+        /javascript:/gi,
+        /data:/gi,
+        /vbscript:/gi,
+        /on\w+=/gi,
+        /style\s*=\s*"[^"]*expression\s*\(/gi
+    ];
+    return !suspiciousPatterns.some(pattern => pattern.test(input));
 }
 
 // Auto-adjust textarea height with improved handling
