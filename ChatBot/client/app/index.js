@@ -10,8 +10,8 @@ function sanitizeText(text) {
 
 // Convert markdown-like syntax to HTML with security measures
 function formatResponse(text) {
-    // Security: First sanitize the text
-    let sanitizedText = sanitizeText(text);
+    // First escape any HTML tags in the original text
+    let sanitizedText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
     
     // Format headings (## Heading)
     sanitizedText = sanitizedText.replace(/^## (.*?)$/gm, '<h2>$1</h2>');
@@ -39,6 +39,28 @@ function formatResponse(text) {
     
     // Format inline code
     sanitizedText = sanitizedText.replace(/\`(.*?)\`/g, '<code class="inline-code">$1</code>');
+
+    // Convert URLs to clickable links with security measures
+    const urlRegex = /(https?:\/\/[^\s]+[^\s.,!?])/g;
+    sanitizedText = sanitizedText.replace(urlRegex, (url) => {
+        const match = url.match(/(https?:\/\/[^\s]+)([.,!?])?/);
+        if (!match) return url;
+        
+        const cleanUrl = match[1];
+        const punctuation = match[2] || '';
+        
+        // Validate URL
+        try {
+            const urlObj = new URL(cleanUrl);
+            // Only allow specific domains
+            if (!['mwgdirect.com', 'mestmaker.com', 'morganwhiteintl.com', 'morganwhite.com'].includes(urlObj.hostname)) {
+                return url;
+            }
+            return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer nofollow">${cleanUrl}</a>${punctuation}`;
+        } catch {
+            return url;
+        }
+    });
 
     return sanitizedText;
 }
@@ -157,30 +179,8 @@ function addBotResponseToDialogueBox(response) {
     
     // Format the response with markdown-like syntax
     const formattedContent = formatResponse(response);
+    messageContent.innerHTML = formattedContent;
     
-    // Convert URLs to clickable links with security measures
-    const urlRegex = /(https?:\/\/[^\s]+[^\s.,!?])/g;
-    const contentWithLinks = formattedContent.replace(urlRegex, (url) => {
-        const match = url.match(/(https?:\/\/[^\s]+)([.,!?])?/);
-        if (!match) return sanitizeText(url);
-        
-        const cleanUrl = match[1];
-        const punctuation = match[2] || '';
-        
-        // Validate URL
-        try {
-            const urlObj = new URL(cleanUrl);
-            // Only allow specific domains
-            if (!['mwgdirect.com', 'mestmaker.com', 'morganwhiteintl.com', 'morganwhite.com'].includes(urlObj.hostname)) {
-                return sanitizeText(url);
-            }
-            return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer nofollow">${cleanUrl}</a>${punctuation}`;
-        } catch {
-            return sanitizeText(url);
-        }
-    });
-    
-    messageContent.innerHTML = contentWithLinks;
     botResponse.appendChild(messageContent);
     document.getElementById('dialogue').appendChild(botResponse);
     scrollToBottom();
