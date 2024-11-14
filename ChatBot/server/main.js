@@ -21,28 +21,24 @@ if (!process.env.OPENAI_API_KEY) {
 // initialize express app
 export const app = express()
 
-// Security middleware with custom CSP that allows morganwhite.com images
+// Security middleware with focused CSP
 app.use(
     helmet({
         contentSecurityPolicy: {
-            useDefaults: false,
             directives: {
                 defaultSrc: ["'self'"],
-                scriptSrc: ["'self'"],
-                styleSrc: ["'self'", "'unsafe-inline'"],
-                imgSrc: ["'self'", "https://*.morganwhite.com", "data:", "blob:"],
+                imgSrc: ["'self'", "https://morganwhite.com", "https://*.morganwhite.com", "data:", "blob:"],
                 connectSrc: ["'self'", "https://api.openai.com"],
-                fontSrc: ["'self'", "https://fonts.gstatic.com"],
+                styleSrc: ["'self'", "'unsafe-inline'"],
+                scriptSrc: ["'self'"],
+                fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
                 objectSrc: ["'none'"],
                 mediaSrc: ["'self'"],
                 frameSrc: ["'none'"],
-                sandbox: ['allow-forms', 'allow-scripts', 'allow-same-origin'],
-                childSrc: ["'none'"],
-                workerSrc: ["'none'"],
-                frameAncestors: ["'none'"],
                 formAction: ["'self'"],
-                upgradeInsecureRequests: [],
-            },
+                baseUri: ["'self'"],
+                upgradeInsecureRequests: []
+            }
         },
         crossOriginEmbedderPolicy: false,
         crossOriginResourcePolicy: { policy: "cross-origin" }
