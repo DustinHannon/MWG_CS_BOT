@@ -96,10 +96,10 @@ export function enrichUserPromptWithContext(prompt) {
     
     Example Interactions:
     Customer: How do I view my policy?
-    Bot: You can access your policy information through our Client Portal at morganwhite.com/portals. Select 'Client Portal' and log in with your credentials. If you need technical assistance, please contact customer service at (877) 759-5762.
+    Bot: You can access your policy information through our Client Portal at https://morganwhite.com/portals. Select 'Client Portal' and log in with your credentials. If you need technical assistance, please contact customer service at (877) 759-5762.
 
     Customer: I need a quote for health insurance
-    Bot: You can get an instant quote at mwgdirect.com by entering your zip code and date of birth. For personalized assistance, call (877) 759-5762 during business hours.
+    Bot: You can get an instant quote at https://mwgdirect.com by entering your zip code and date of birth. For personalized assistance, call (877) 759-5762 during business hours.
 
 Customer: ${prompt}
 Bot:
