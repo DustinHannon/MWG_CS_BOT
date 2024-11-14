@@ -13,6 +13,29 @@ function formatResponse(text) {
     // First escape any HTML tags in the original text
     let sanitizedText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
     
+    // Convert URLs to clickable links with security measures
+    // Do this before other formatting to ensure links work
+    const urlRegex = /(https?:\/\/[^\s]+[^\s.,!?])/g;
+    sanitizedText = sanitizedText.replace(urlRegex, (url) => {
+        const match = url.match(/(https?:\/\/[^\s]+)([.,!?])?/);
+        if (!match) return url;
+        
+        const cleanUrl = match[1];
+        const punctuation = match[2] || '';
+        
+        // Validate URL
+        try {
+            const urlObj = new URL(cleanUrl);
+            // Only allow specific domains
+            if (!['mwgdirect.com', 'mestmaker.com', 'morganwhiteintl.com', 'morganwhite.com'].includes(urlObj.hostname)) {
+                return url;
+            }
+            return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer nofollow">${cleanUrl}</a>${punctuation}`;
+        } catch {
+            return url;
+        }
+    });
+    
     // Format headings (## Heading)
     sanitizedText = sanitizedText.replace(/^## (.*?)$/gm, '<h2>$1</h2>');
     sanitizedText = sanitizedText.replace(/^# (.*?)$/gm, '<h1>$1</h1>');
@@ -39,28 +62,6 @@ function formatResponse(text) {
     
     // Format inline code
     sanitizedText = sanitizedText.replace(/\`(.*?)\`/g, '<code class="inline-code">$1</code>');
-
-    // Convert URLs to clickable links with security measures
-    const urlRegex = /(https?:\/\/[^\s]+[^\s.,!?])/g;
-    sanitizedText = sanitizedText.replace(urlRegex, (url) => {
-        const match = url.match(/(https?:\/\/[^\s]+)([.,!?])?/);
-        if (!match) return url;
-        
-        const cleanUrl = match[1];
-        const punctuation = match[2] || '';
-        
-        // Validate URL
-        try {
-            const urlObj = new URL(cleanUrl);
-            // Only allow specific domains
-            if (!['mwgdirect.com', 'mestmaker.com', 'morganwhiteintl.com', 'morganwhite.com'].includes(urlObj.hostname)) {
-                return url;
-            }
-            return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer nofollow">${cleanUrl}</a>${punctuation}`;
-        } catch {
-            return url;
-        }
-    });
 
     return sanitizedText;
 }
