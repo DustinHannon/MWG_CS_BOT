@@ -224,17 +224,33 @@ main {
 .formatted-content .formatted-list {
   margin: 0.75rem 0;
   padding-left: 1.5rem;
+  list-style-position: outside;
 }
 
 .formatted-content .bullet-point {
   list-style-type: disc;
-  margin: 0.5rem 0;
-  line-height: 1.5;
+  margin: 0.75rem 0;
+  line-height: 1.6;
+  padding-left: 0.5rem;
+  text-align: left;
+  display: list-item;
+}
+
+.formatted-content .bullet-point p {
+  margin: 0;
+  display: inline-block;
+  width: calc(100% - 1rem);
+  vertical-align: top;
+  white-space: normal;
+  word-wrap: break-word;
 }
 
 .formatted-content .numbered-item {
-  margin: 0.5rem 0;
-  line-height: 1.5;
+  margin: 0.75rem 0;
+  line-height: 1.6;
+  padding-left: 0.5rem;
+  text-align: left;
+  display: list-item;
 }
 
 .formatted-content strong {
