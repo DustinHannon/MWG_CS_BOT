@@ -21,13 +21,29 @@ if (!process.env.OPENAI_API_KEY) {
 // initialize express app
 export const app = express()
 
-// Security middleware
-app.use(helmet()); // Adds various HTTP headers for security
+// Security middleware with custom CSP
+app.use(
+    helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                imgSrc: ["'self'", "https://morganwhite.com"],
+                scriptSrc: ["'self'"],
+                styleSrc: ["'self'", "'unsafe-inline'"],
+                fontSrc: ["'self'", "https://fonts.gstatic.com"],
+                connectSrc: ["'self'", "https://api.openai.com"],
+                frameSrc: ["'none'"],
+                objectSrc: ["'none'"],
+                upgradeInsecureRequests: [],
+            },
+        },
+    })
+);
 
 // Configure CORS
 const corsOptions = {
     origin: process.env.NODE_ENV === 'production' 
-        ? 'https://your-production-domain.com'  // Replace with your actual domain
+        ? process.env.PRODUCTION_DOMAIN
         : 'http://localhost:3000',
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type']
