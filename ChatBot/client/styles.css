@@ -15,6 +15,8 @@
   --overlay-color: rgba(27, 75, 143, 0.85);
   --error-color: #e53e3e;
   --loading-bg: rgba(27, 75, 143, 0.1);
+  --code-bg: rgba(45, 55, 72, 0.1);
+  --heading-color: #1a365d;
 }
 
 .dark-mode {
@@ -29,6 +31,8 @@
   --shadow-color: rgba(0, 0, 0, 0.3);
   --overlay-color: rgba(32, 33, 35, 0.95);
   --loading-bg: rgba(255, 255, 255, 0.1);
+  --code-bg: rgba(255, 255, 255, 0.1);
+  --heading-color: #ffffff;
 }
 
 * {
@@ -193,6 +197,84 @@ main {
   max-width: var(--max-width);
   margin: 0 auto;
   width: 100%;
+}
+
+/* Enhanced Message Content Formatting */
+.formatted-content h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--heading-color);
+  margin: 1rem 0 0.75rem;
+  border-bottom: 2px solid var(--accent-color);
+  padding-bottom: 0.5rem;
+}
+
+.formatted-content h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--heading-color);
+  margin: 0.75rem 0 0.5rem;
+}
+
+.formatted-content p {
+  margin: 0.75rem 0;
+  line-height: 1.6;
+}
+
+.formatted-content .formatted-list {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.formatted-content .bullet-point {
+  list-style-type: disc;
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.formatted-content .numbered-item {
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.formatted-content strong {
+  font-weight: 600;
+  color: var(--accent-color);
+}
+
+.formatted-content em {
+  font-style: italic;
+  color: var(--secondary-text);
+}
+
+.formatted-content code {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  background-color: var(--code-bg);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+}
+
+.formatted-content pre {
+  background-color: var(--code-bg);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+
+.formatted-content pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+  display: block;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.formatted-content .inline-code {
+  display: inline;
+  white-space: normal;
 }
 
 .message-content p {

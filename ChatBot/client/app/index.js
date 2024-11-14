@@ -8,6 +8,41 @@ function sanitizeText(text) {
     return div.innerHTML;
 }
 
+// Convert markdown-like syntax to HTML with security measures
+function formatResponse(text) {
+    // Security: First sanitize the text
+    let sanitizedText = sanitizeText(text);
+    
+    // Format headings (## Heading)
+    sanitizedText = sanitizedText.replace(/^## (.*?)$/gm, '<h2>$1</h2>');
+    sanitizedText = sanitizedText.replace(/^# (.*?)$/gm, '<h1>$1</h1>');
+    
+    // Format bullet points
+    sanitizedText = sanitizedText.replace(/^- (.*?)$/gm, '<li class="bullet-point">$1</li>');
+    sanitizedText = sanitizedText.replace(/(<li class="bullet-point">.*?<\/li>(\n|$))+/g, '<ul class="formatted-list">$&</ul>');
+    
+    // Format numbered lists
+    sanitizedText = sanitizedText.replace(/^\d+\. (.*?)$/gm, '<li class="numbered-item">$1</li>');
+    sanitizedText = sanitizedText.replace(/(<li class="numbered-item">.*?<\/li>(\n|$))+/g, '<ol class="formatted-list">$&</ol>');
+    
+    // Format paragraphs (double newline)
+    sanitizedText = sanitizedText.replace(/\n\n(.*?)(?=\n\n|$)/g, '<p>$1</p>');
+    
+    // Format bold text
+    sanitizedText = sanitizedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Format italic text
+    sanitizedText = sanitizedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    // Format code blocks
+    sanitizedText = sanitizedText.replace(/\`\`\`(.*?)\`\`\`/gs, '<pre><code>$1</code></pre>');
+    
+    // Format inline code
+    sanitizedText = sanitizedText.replace(/\`(.*?)\`/g, '<code class="inline-code">$1</code>');
+
+    return sanitizedText;
+}
+
 // Validate input
 function validateInput(input) {
     if (!input || typeof input !== 'string') {
@@ -112,17 +147,20 @@ function addUserQuestionToDialogueBox(question) {
     scrollToBottom();
 }
 
-// Add bot response to chat with enhanced security
+// Add bot response to chat with enhanced security and formatting
 function addBotResponseToDialogueBox(response) {
     const botResponse = document.createElement('li');
     botResponse.className = 'bot-message';
     
     const messageContent = document.createElement('div');
-    messageContent.className = 'message-content';
+    messageContent.className = 'message-content formatted-content';
+    
+    // Format the response with markdown-like syntax
+    const formattedContent = formatResponse(response);
     
     // Convert URLs to clickable links with security measures
     const urlRegex = /(https?:\/\/[^\s]+[^\s.,!?])/g;
-    const formattedResponse = sanitizeText(response).replace(urlRegex, (url) => {
+    const contentWithLinks = formattedContent.replace(urlRegex, (url) => {
         const match = url.match(/(https?:\/\/[^\s]+)([.,!?])?/);
         if (!match) return sanitizeText(url);
         
@@ -142,7 +180,7 @@ function addBotResponseToDialogueBox(response) {
         }
     });
     
-    messageContent.innerHTML = formattedResponse.trim();
+    messageContent.innerHTML = contentWithLinks;
     botResponse.appendChild(messageContent);
     document.getElementById('dialogue').appendChild(botResponse);
     scrollToBottom();
