@@ -85,5 +85,15 @@ jobs:
                 "name": "OPENAI_API_KEY",
                 "value": "${{ secrets.OPENAI_API_KEY }}",
                 "slotSetting": false
+              },
+              {
+                "name": "NODE_ENV",
+                "value": "production",
+                "slotSetting": false
+              },
+              {
+                "name": "PRODUCTION_DOMAIN",
+                "value": "https://mwgcsbot-apdcavd6ameddtdb.southcentralus-01.azurewebsites.net/",
+                "slotSetting": false
               }
             ]
