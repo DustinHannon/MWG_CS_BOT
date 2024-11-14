@@ -1,9 +1,39 @@
 // State management
 let isProcessing = false;
 
+// Sanitize text to prevent XSS
+function sanitizeText(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Validate input
+function validateInput(input) {
+    if (!input || typeof input !== 'string') {
+        return false;
+    }
+    if (input.length > 500) {
+        return false;
+    }
+    // Check for any suspicious patterns
+    const suspiciousPatterns = [
+        /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+        /javascript:/gi,
+        /on\w+=/gi
+    ];
+    return !suspiciousPatterns.some(pattern => pattern.test(input));
+}
+
 // Handle form submission
 async function handleSubmitQuestion(question) {
     if (!question.trim() || isProcessing) {
+        return;
+    }
+
+    // Validate input before processing
+    if (!validateInput(question)) {
+        addErrorMessageToDialogueBox('Invalid input detected. Please try again.');
         return;
     }
 
@@ -29,23 +59,29 @@ async function handleSubmitQuestion(question) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ question }),
+            credentials: 'same-origin' // Ensure cookies are sent with request
         });
 
         if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
             throw new Error(
-                response.status === 429 
+                errorData.error || 
+                (response.status === 429 
                     ? 'Please wait a moment before sending another message.' 
-                    : 'Network response was not ok'
+                    : 'An error occurred while processing your request.')
             );
         }
 
         const { data } = await response.json();
+        if (!data || typeof data !== 'string') {
+            throw new Error('Invalid response format');
+        }
         addBotResponseToDialogueBox(data);
     } catch (error) {
         console.error('Error:', error);
         addErrorMessageToDialogueBox(error.message);
         form.classList.add('error');
-        errorMessage.textContent = error.message;
+        errorMessage.textContent = sanitizeText(error.message);
     } finally {
         // Reset processing state
         isProcessing = false;
@@ -63,7 +99,7 @@ function addUserQuestionToDialogueBox(question) {
     
     const messageContent = document.createElement('div');
     messageContent.className = 'message-content';
-    messageContent.textContent = question;
+    messageContent.textContent = question; // Using textContent for automatic escaping
     
     userQuestion.appendChild(messageContent);
     document.getElementById('dialogue').appendChild(userQuestion);
@@ -76,7 +112,7 @@ function addUserQuestionToDialogueBox(question) {
     scrollToBottom();
 }
 
-// Add bot response to chat
+// Add bot response to chat with enhanced security
 function addBotResponseToDialogueBox(response) {
     const botResponse = document.createElement('li');
     botResponse.className = 'bot-message';
@@ -84,13 +120,26 @@ function addBotResponseToDialogueBox(response) {
     const messageContent = document.createElement('div');
     messageContent.className = 'message-content';
     
-    // Convert URLs to clickable links
+    // Convert URLs to clickable links with security measures
     const urlRegex = /(https?:\/\/[^\s]+[^\s.,!?])/g;
-    const formattedResponse = response.replace(urlRegex, (url) => {
+    const formattedResponse = sanitizeText(response).replace(urlRegex, (url) => {
         const match = url.match(/(https?:\/\/[^\s]+)([.,!?])?/);
+        if (!match) return sanitizeText(url);
+        
         const cleanUrl = match[1];
         const punctuation = match[2] || '';
-        return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer">${cleanUrl}</a>${punctuation}`;
+        
+        // Validate URL
+        try {
+            const urlObj = new URL(cleanUrl);
+            // Only allow specific domains
+            if (!['mwgdirect.com', 'mestmaker.com', 'morganwhiteintl.com', 'morganwhite.com'].includes(urlObj.hostname)) {
+                return sanitizeText(url);
+            }
+            return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer nofollow">${cleanUrl}</a>${punctuation}`;
+        } catch {
+            return sanitizeText(url);
+        }
     });
     
     messageContent.innerHTML = formattedResponse.trim();
@@ -106,85 +155,112 @@ function addErrorMessageToDialogueBox(errorMessage = 'An error occurred. Please 
     
     const messageContent = document.createElement('div');
     messageContent.className = 'message-content';
-    messageContent.innerHTML = errorMessage;
+    messageContent.textContent = errorMessage; // Using textContent for automatic escaping
     
     errorElement.appendChild(messageContent);
     document.getElementById('dialogue').appendChild(errorElement);
     scrollToBottom();
 }
 
-// Auto-adjust textarea height
+// Auto-adjust textarea height with max height limit
 function adjustTextareaHeight(textarea) {
+    if (!textarea) return;
+    
+    const maxHeight = 200;
     textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+    textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
 }
 
-// Scroll chat to bottom
+// Scroll chat to bottom safely
 function scrollToBottom() {
     const chatContainer = document.getElementById('chat-container');
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
 }
 
-// Update dark mode button text
+// Update dark mode button text safely
 function updateDarkModeButtonText(isDarkMode) {
     const buttonText = document.querySelector('#toggle-dark-mode span');
-    buttonText.textContent = isDarkMode ? 'Light Mode' : 'Dark Mode';
-}
-
-// Toggle dark mode
-function toggleDarkMode() {
-    document.body.classList.toggle('dark-mode');
-    
-    // Save preference and update button text
-    const isDarkMode = document.body.classList.contains('dark-mode');
-    localStorage.setItem('darkMode', isDarkMode);
-    updateDarkModeButtonText(isDarkMode);
-}
-
-// Initialize
-window.onload = () => {
-    // Set up form submission
-    const form = document.getElementById('prompt-form');
-    const input = document.getElementById('prompt-input');
-    const submitButton = form.querySelector('button[type="submit"]');
-
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        if (!isProcessing) {
-            handleSubmitQuestion(input.value);
-        }
-    });
-
-    // Handle input changes
-    input.addEventListener('input', () => {
-        adjustTextareaHeight(input);
-        if (!isProcessing) {
-            submitButton.disabled = !input.value.trim();
-            form.classList.remove('error');
-        }
-    });
-
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            if (input.value.trim() && !isProcessing) {
-                handleSubmitQuestion(input.value);
-            }
-        }
-    });
-
-    // Set up dark mode
-    document.getElementById('toggle-dark-mode').addEventListener('click', toggleDarkMode);
-    
-    // Load saved dark mode preference
-    const savedDarkMode = localStorage.getItem('darkMode');
-    if (savedDarkMode === 'true') {
-        document.body.classList.add('dark-mode');
+    if (buttonText) {
+        buttonText.textContent = isDarkMode ? 'Light Mode' : 'Dark Mode';
     }
-    // Set initial button text based on current mode
-    updateDarkModeButtonText(savedDarkMode === 'true');
+}
 
-    // Initial textarea height
-    adjustTextareaHeight(input);
-    submitButton.disabled = true;
+// Toggle dark mode with safe storage
+function toggleDarkMode() {
+    try {
+        document.body.classList.toggle('dark-mode');
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        localStorage.setItem('darkMode', isDarkMode.toString());
+        updateDarkModeButtonText(isDarkMode);
+    } catch (error) {
+        console.error('Error toggling dark mode:', error);
+    }
+}
+
+// Initialize with enhanced security
+window.onload = () => {
+    try {
+        // Set up form submission
+        const form = document.getElementById('prompt-form');
+        const input = document.getElementById('prompt-input');
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        if (form && input && submitButton) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (!isProcessing) {
+                    const sanitizedInput = input.value.trim();
+                    if (validateInput(sanitizedInput)) {
+                        handleSubmitQuestion(sanitizedInput);
+                    } else {
+                        addErrorMessageToDialogueBox('Invalid input detected. Please try again.');
+                    }
+                }
+            });
+
+            // Handle input changes
+            input.addEventListener('input', () => {
+                adjustTextareaHeight(input);
+                if (!isProcessing) {
+                    submitButton.disabled = !input.value.trim();
+                    form.classList.remove('error');
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const sanitizedInput = input.value.trim();
+                    if (sanitizedInput && !isProcessing && validateInput(sanitizedInput)) {
+                        handleSubmitQuestion(sanitizedInput);
+                    }
+                }
+            });
+
+            // Set up dark mode
+            const darkModeToggle = document.getElementById('toggle-dark-mode');
+            if (darkModeToggle) {
+                darkModeToggle.addEventListener('click', toggleDarkMode);
+            }
+
+            // Load saved dark mode preference safely
+            try {
+                const savedDarkMode = localStorage.getItem('darkMode');
+                if (savedDarkMode === 'true') {
+                    document.body.classList.add('dark-mode');
+                }
+                updateDarkModeButtonText(savedDarkMode === 'true');
+            } catch (error) {
+                console.error('Error loading dark mode preference:', error);
+            }
+
+            // Initial textarea height
+            adjustTextareaHeight(input);
+            submitButton.disabled = true;
+        }
+    } catch (error) {
+        console.error('Error during initialization:', error);
+    }
 };
