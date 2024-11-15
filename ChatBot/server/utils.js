@@ -14,49 +14,50 @@ export function enrichUserPromptWithContext(prompt) {
     - Customer Service Hours: Monday-Thursday 8:00am-5:00pm, Friday 8:30am-2:30pm, Closed weekends
 
     Company Divisions and Services:
-    1. MWG Direct (https://mwgdirect.com)
+    1. MWG Direct
        - Individual and family insurance plans
        - Medical, dental, and vision coverage
        - Medicare and retirement solutions
        - Online quote system using zip code and date of birth
        - Educational resources and webinars
        - Direct phone: (877) 759-5762
+       - Website: https://mwgdirect.com
 
-    2. Mestmaker & Associates (https://mestmaker.com)
+    2. Mestmaker & Associates
        - Creative insurance solutions since 1987
        - Specialized services for public/private groups
        - Innovative insurance products
        - Professional broker/agent support tools
        - Located: 1675 Chester Avenue, Suite 100
+       - Webite: https://mestmaker.com
 
-    3. MWG International (Miami, FL based) (https://morganwhiteintl.com)
+    3. MWG International (Miami, FL based)
        - Serves Latin America and Caribbean markets
        - Third Party Administrator for international products
        - Specialized international insurance solutions
+       - Website: https://morganwhiteintl.com
 
-    Online Portal Access (https://morganwhite.com/portals):
+    Online Portal Access:
     1. Broker Portal
        - For licensed insurance agents and brokers
        - Access to quotes and policy management
        - Sales tools and resources
        - Commission tracking
+       - Website: https://brokers.mwadmin.com
 
     2. Client Portal
        - Policy information access
        - Claims submission and tracking
        - Coverage details and documentation
        - Personal information updates
+       - Website: https://my.mwadmin.com
 
     3. Group Portal
        - Employer group administration
        - Employee enrollment management
        - Group policy information
        - Billing and payment processing
-
-    4. MWG Employee Portal
-       - Internal staff access
-       - Company resources
-       - Employee benefits information
+       - Website: https://groups.mwadmin.com
 
     Insurance Solutions:
     - Individual Plans: Medical, dental, vision coverage
