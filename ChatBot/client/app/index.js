@@ -31,12 +31,33 @@ function formatResponse(text) {
     // Don't escape HTML in the bot's response since it's trusted content
     let sanitizedText = text;
     
-    // Convert plain URLs to clickable links with improved regex
-    const urlRegex = /(?<!<a[^>]*>)(?:https?:\/\/(?:www\.)?)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)(?!<\/a>)/gi;
-    sanitizedText = sanitizedText.replace(urlRegex, (url) => {
-        const match = url.match(/(.*?)([.,!?])?$/);
-        if (!match) return url;
-        return formatUrl(match[1], match[2] || '');
+    // Handle URLs in different contexts
+    
+    // 1. First handle URLs in parentheses
+    sanitizedText = sanitizedText.replace(/\((https?:\/\/[^\s)]+)\)/g, (match, url) => {
+        try {
+            const urlObj = new URL(url);
+            return `(<a href="${url}" target="_blank" rel="noopener noreferrer nofollow" class="external-link" aria-label="Opens in new tab: ${urlObj.hostname}">${url}</a>)`;
+        } catch {
+            return match; // Keep original if URL is invalid
+        }
+    });
+    
+    // 2. Then handle standalone URLs
+    const urlRegex = /(?<!<a[^>]*>|[(\w])((?:https?:\/\/(?:www\.)?)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*))(?!<\/a>|\))/gi;
+    sanitizedText = sanitizedText.replace(urlRegex, (match, url, offset, string) => {
+        // Check if URL is preceded by an opening parenthesis
+        if (offset > 0 && string[offset - 1] === '(') {
+            return match;
+        }
+        
+        // Check for trailing punctuation
+        const punctuationMatch = url.match(/(.*?)([.,!?])$/);
+        if (punctuationMatch) {
+            return formatUrl(punctuationMatch[1], punctuationMatch[2]);
+        }
+        
+        return formatUrl(url);
     });
     
     // Format headings with proper hierarchy
