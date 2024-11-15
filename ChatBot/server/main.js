@@ -91,14 +91,14 @@ const validateInput = (req, res, next) => {
         });
     }
     
-    // Sanitize input
-    req.body.question = xss(question.trim());
+    // Sanitize only the user input
+    req.body.sanitizedQuestion = xss(question.trim());
     next();
 };
 
 // create http post endpoint that accepts user input and sends it to OpenAI API
 app.post('/api/openai', validateInput, async (req, res) => {
-    const { question } = req.body;
+    const { sanitizedQuestion } = req.body;
 
     try {
         // send a request to the OpenAI API with the user's prompt
@@ -112,7 +112,7 @@ app.post('/api/openai', validateInput, async (req, res) => {
                 model: 'gpt-3.5-turbo',
                 messages: [
                     { role: 'system', content: 'You are a helpful assistant.' },
-                    { role: 'user', content: enrichUserPromptWithContext(question) }
+                    { role: 'user', content: enrichUserPromptWithContext(sanitizedQuestion) }
                 ],
                 max_tokens: 600,
             }),
@@ -129,6 +129,7 @@ app.post('/api/openai', validateInput, async (req, res) => {
             throw new Error('Invalid response format from OpenAI API');
         }
 
+        // Send the bot's response without XSS sanitization since it's trusted content
         res.json({ data: data.choices[0].message.content });
     } catch (error) {
         console.error('Error:', error);
