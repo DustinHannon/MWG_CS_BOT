@@ -75,6 +75,21 @@ app.use(express.static(path.join(process.cwd(), 'client'), {
     }
 }));
 
+// Clean bot response of any HTML formatting attempts
+function cleanBotResponse(text) {
+    // Remove any HTML link attributes the bot might try to add
+    return text.replace(/target="[^"]*"/g, '')
+              .replace(/rel="[^"]*"/g, '')
+              .replace(/class="[^"]*"/g, '')
+              .replace(/aria-label="[^"]*"/g, '')
+              // Clean up any leftover HTML formatting attempts
+              .replace(/<a[^>]*>(.*?)<\/a>/g, '$1')
+              // Remove any empty HTML attributes
+              .replace(/\s+[a-zA-Z-]+=""/g, '')
+              // Clean up extra spaces
+              .replace(/\s+/g, ' ');
+}
+
 // Input validation middleware
 const validateInput = (req, res, next) => {
     const { question } = req.body;
@@ -129,8 +144,9 @@ app.post('/api/openai', validateInput, async (req, res) => {
             throw new Error('Invalid response format from OpenAI API');
         }
 
-        // Send the bot's response without XSS sanitization since it's trusted content
-        res.json({ data: data.choices[0].message.content });
+        // Clean the bot's response before sending it to the client
+        const cleanedResponse = cleanBotResponse(data.choices[0].message.content);
+        res.json({ data: cleanedResponse });
     } catch (error) {
         console.error('Error:', error);
         
