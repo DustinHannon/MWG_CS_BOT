@@ -31,16 +31,12 @@ function formatResponse(text) {
     // Don't escape HTML in the bot's response since it's trusted content
     let sanitizedText = text;
     
-    // Handle URLs, but ignore anything that looks like HTML attributes
-    const urlRegex = /(?<!<[^>]*|="|=')(?:https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*))/gi;
-    
+    // Convert URLs to clickable links with improved regex
+    const urlRegex = /(?:https?:\/\/(?:www\.)?)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi;
     sanitizedText = sanitizedText.replace(urlRegex, (url) => {
-        // Check for trailing punctuation
-        const punctuationMatch = url.match(/(.*?)([.,!?])$/);
-        if (punctuationMatch) {
-            return formatUrl(punctuationMatch[1], punctuationMatch[2]);
-        }
-        return formatUrl(url);
+        const match = url.match(/(.*?)([.,!?])?$/);
+        if (!match) return url;
+        return formatUrl(match[1], match[2] || '');
     });
     
     // Format headings with proper hierarchy
