@@ -28,15 +28,11 @@ function formatResponse(text) {
         return 'An error occurred while formatting the response.';
     }
 
-    // Instead of escaping all HTML, we'll only escape specific characters
-    // that could be dangerous while preserving valid HTML tags
-    let sanitizedText = text
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    // Don't escape HTML in the bot's response since it's trusted content
+    let sanitizedText = text;
     
-    // Convert URLs to clickable links with improved regex
-    const urlRegex = /(?:https?:\/\/(?:www\.)?)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi;
+    // Convert plain URLs to clickable links with improved regex
+    const urlRegex = /(?<!<a[^>]*>)(?:https?:\/\/(?:www\.)?)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)(?!<\/a>)/gi;
     sanitizedText = sanitizedText.replace(urlRegex, (url) => {
         const match = url.match(/(.*?)([.,!?])?$/);
         if (!match) return url;
