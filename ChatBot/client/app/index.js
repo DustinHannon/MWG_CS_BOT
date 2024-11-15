@@ -28,8 +28,12 @@ function formatResponse(text) {
         return 'An error occurred while formatting the response.';
     }
 
-    // First escape any HTML tags in the original text
-    let sanitizedText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Instead of escaping all HTML, we'll only escape specific characters
+    // that could be dangerous while preserving valid HTML tags
+    let sanitizedText = text
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     
     // Convert URLs to clickable links with improved regex
     const urlRegex = /(?:https?:\/\/(?:www\.)?)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi;
