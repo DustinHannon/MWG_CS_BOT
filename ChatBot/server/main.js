@@ -75,21 +75,6 @@ app.use(express.static(path.join(process.cwd(), 'client'), {
     }
 }));
 
-// Clean bot response of any HTML formatting attempts
-function cleanBotResponse(text) {
-    // Remove any HTML link attributes the bot might try to add
-    return text.replace(/target="[^"]*"/g, '')
-              .replace(/rel="[^"]*"/g, '')
-              .replace(/class="[^"]*"/g, '')
-              .replace(/aria-label="[^"]*"/g, '')
-              // Clean up any leftover HTML formatting attempts
-              .replace(/<a[^>]*>(.*?)<\/a>/g, '$1')
-              // Remove any empty HTML attributes
-              .replace(/\s+[a-zA-Z-]+=""/g, '')
-              // Clean up extra spaces
-              .replace(/\s+/g, ' ');
-}
-
 // Input validation middleware
 const validateInput = (req, res, next) => {
     const { question } = req.body;
@@ -106,14 +91,14 @@ const validateInput = (req, res, next) => {
         });
     }
     
-    // Sanitize only the user input
-    req.body.sanitizedQuestion = xss(question.trim());
+    // Sanitize input
+    req.body.question = xss(question.trim());
     next();
 };
 
 // create http post endpoint that accepts user input and sends it to OpenAI API
 app.post('/api/openai', validateInput, async (req, res) => {
-    const { sanitizedQuestion } = req.body;
+    const { question } = req.body;
 
     try {
         // send a request to the OpenAI API with the user's prompt
@@ -126,8 +111,32 @@ app.post('/api/openai', validateInput, async (req, res) => {
             body: JSON.stringify({
                 model: 'gpt-3.5-turbo',
                 messages: [
-                    { role: 'system', content: 'You are a helpful assistant.' },
-                    { role: 'user', content: enrichUserPromptWithContext(sanitizedQuestion) }
+                    { 
+                        role: 'system', 
+                        content: `You are a helpful assistant that responds in properly formatted HTML. 
+                        Always wrap your entire response in a <div> tag.
+                        Use appropriate HTML tags such as:
+                        - <p> for paragraphs
+                        - <ol> and <li> for numbered lists
+                        - <ul> and <li> for bullet points
+                        - <strong> for emphasis
+                        - <br> for line breaks
+                        
+                        Example response format:
+                        <div>
+                            <p>Here are our services:</p>
+                            <ol>
+                                <li>First service description</li>
+                                <li>Second service description</li>
+                            </ol>
+                            <p>For assistance, contact us at <strong>(555) 555-5555</strong></p>
+                        </div>
+                        
+                        Always maintain proper HTML structure and nesting.
+                        Do not include any markdown formatting.
+                        Do not include script tags or event handlers.` 
+                    },
+                    { role: 'user', content: enrichUserPromptWithContext(question) }
                 ],
                 max_tokens: 600,
             }),
@@ -144,9 +153,26 @@ app.post('/api/openai', validateInput, async (req, res) => {
             throw new Error('Invalid response format from OpenAI API');
         }
 
-        // Clean the bot's response before sending it to the client
-        const cleanedResponse = cleanBotResponse(data.choices[0].message.content);
-        res.json({ data: cleanedResponse });
+        // Sanitize the HTML response to prevent XSS
+        const sanitizedHtml = xss(data.choices[0].message.content, {
+            whiteList: {
+                div: [],
+                p: [],
+                ol: [],
+                ul: [],
+                li: [],
+                strong: [],
+                em: [],
+                br: [],
+                h1: [],
+                h2: [],
+                h3: []
+            },
+            stripIgnoreTag: true,
+            stripIgnoreTagBody: ['script', 'style']
+        });
+
+        res.json({ data: sanitizedHtml });
     } catch (error) {
         console.error('Error:', error);
         

@@ -1,90 +1,6 @@
 // State management
 let isProcessing = false;
 
-// Sanitize text to prevent XSS
-function sanitizeText(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// Convert markdown-like syntax to HTML with enhanced formatting
-function formatResponse(text) {
-    if (!text || typeof text !== 'string') {
-        return 'An error occurred while formatting the response.';
-    }
-
-    // First escape any HTML tags in the original text
-    let sanitizedText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    
-    // Format headings with proper hierarchy
-    sanitizedText = sanitizedText.replace(/^### (.*?)$/gm, '<h3>$1</h3>');
-    sanitizedText = sanitizedText.replace(/^## (.*?)$/gm, '<h2>$1</h2>');
-    sanitizedText = sanitizedText.replace(/^# (.*?)$/gm, '<h1>$1</h1>');
-    
-    // Format lists safely
-    const lines = sanitizedText.split('\n').map(line => line || ' ');
-    let inList = false;
-    let listType = '';
-    let formattedLines = [];
-    
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const bulletMatch = line.match(/^[-*] (.+)/);
-        const numberMatch = line.match(/^\d+\. (.+)/);
-        
-        if (bulletMatch || numberMatch) {
-            const content = (bulletMatch || numberMatch)[1];
-            const isOrdered = !!numberMatch;
-            
-            if (!inList) {
-                inList = true;
-                listType = isOrdered ? 'ol' : 'ul';
-                formattedLines.push(`<${listType} class="formatted-list">`);
-            }
-            
-            formattedLines.push(`<li class="${isOrdered ? 'numbered-item' : 'bullet-point'}">${content}</li>`);
-        } else {
-            if (inList) {
-                formattedLines.push(`</${listType}>`);
-                inList = false;
-            }
-            formattedLines.push(line);
-        }
-    }
-    
-    if (inList) {
-        formattedLines.push(`</${listType}>`);
-    }
-    
-    sanitizedText = formattedLines.join('\n');
-    
-    // Format code blocks safely
-    sanitizedText = sanitizedText.replace(/```([\s\S]*?)```/g, (match, code) => {
-        return `<pre><code>${code.trim()}</code></pre>`;
-    });
-    
-    // Format inline code safely
-    sanitizedText = sanitizedText.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
-    
-    // Format bold text safely
-    sanitizedText = sanitizedText.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    
-    // Format italic text safely
-    sanitizedText = sanitizedText.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-    
-    // Format paragraphs safely
-    sanitizedText = sanitizedText.split('\n\n').map(para => {
-        para = para.trim();
-        return para ? `<p>${para}</p>` : '';
-    }).join('\n');
-    
-    // Handle single newlines within paragraphs
-    sanitizedText = sanitizedText.replace(/([^\n])\n([^\n])/g, '$1<br>$2');
-    
-    return sanitizedText;
-}
-
 // Handle form submission
 async function handleSubmitQuestion(question) {
     if (!question.trim() || isProcessing) {
@@ -141,7 +57,7 @@ async function handleSubmitQuestion(question) {
         console.error('Error:', error);
         addErrorMessageToDialogueBox(error.message);
         form.classList.add('error');
-        errorMessage.textContent = sanitizeText(error.message);
+        errorMessage.textContent = error.message;
     } finally {
         // Reset processing state
         isProcessing = false;
@@ -173,7 +89,7 @@ function addUserQuestionToDialogueBox(question) {
     scrollToBottom();
 }
 
-// Add bot response to chat with enhanced formatting and accessibility
+// Add bot response to chat with enhanced accessibility
 function addBotResponseToDialogueBox(response) {
     const botResponse = document.createElement('li');
     botResponse.className = 'bot-message';
@@ -182,9 +98,8 @@ function addBotResponseToDialogueBox(response) {
     
     const messageContent = document.createElement('div');
     messageContent.className = 'message-content formatted-content';
-    
-    const formattedContent = formatResponse(response);
-    messageContent.innerHTML = formattedContent;
+    // Since we're receiving pre-formatted HTML from the API, we can use it directly
+    messageContent.innerHTML = response;
     
     // Add semantic structure for screen readers
     const sections = messageContent.querySelectorAll('h1, h2, h3');
