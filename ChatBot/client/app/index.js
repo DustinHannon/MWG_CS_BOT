@@ -11,8 +11,10 @@ function sanitizeText(text) {
 // Enhanced URL validation and formatting
 function formatUrl(url, punctuation = '') {
     try {
-        const urlObj = new URL(url);
-        return `<a href="${url}" 
+        // Add https:// if protocol is missing
+        const urlToFormat = url.startsWith('http') ? url : `https://${url}`;
+        const urlObj = new URL(urlToFormat);
+        return `<a href="${urlToFormat}" 
             target="_blank" 
             rel="noopener noreferrer nofollow"
             class="external-link"
@@ -32,11 +34,15 @@ function formatResponse(text) {
     let sanitizedText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
     
     // Convert URLs to clickable links with improved regex
-    const urlRegex = /(?:https?:\/\/(?:www\.)?)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi;
-    sanitizedText = sanitizedText.replace(urlRegex, (url) => {
-        const match = url.match(/(.*?)([.,!?])?$/);
-        if (!match) return url;
-        return formatUrl(match[1], match[2] || '');
+    const urlRegex = /((?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+(?:\.[a-zA-Z]{2,})+(?:\/[^\s)*,!.?]*)?)/gi;
+    sanitizedText = sanitizedText.replace(urlRegex, (match) => {
+        // Extract any trailing punctuation
+        const punctuationMatch = match.match(/([^.,!?]*)([\.,!?])?$/);
+        if (punctuationMatch) {
+            const [, url, punctuation] = punctuationMatch;
+            return formatUrl(url, punctuation || '');
+        }
+        return formatUrl(match);
     });
     
     // Format headings with proper hierarchy
