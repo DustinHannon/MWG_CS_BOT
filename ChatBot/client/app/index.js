@@ -30,8 +30,8 @@ function formatResponse(text) {
         return 'An error occurred while formatting the response.';
     }
 
-    // First escape any HTML tags in the original text
-    let sanitizedText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Don't escape HTML in the bot's response since it's trusted content
+    let sanitizedText = text;
     
     // Convert URLs to clickable links with improved regex
     const urlRegex = /((?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+(?:\.[a-zA-Z]{2,})+(?:\/[^\s)*,!.?]*)?)/gi;
