@@ -202,6 +202,7 @@ main {
   list-style: none;
   position: relative;
   z-index: 2;
+  padding-right: 1rem; /* Added to prevent scrollbar overlap */
 }
 
 #dialogue li {
@@ -276,13 +277,13 @@ main {
 
 /* Enhanced List Styling */
 .formatted-content .formatted-list {
-  margin: 1rem 0;
+  margin: 1.25rem 0;  /* Increased from 1rem */
   padding-left: 1.5rem;
 }
 
 .formatted-content .bullet-point,
 .formatted-content .numbered-item {
-  margin: 0.5rem 0;
+  margin: 0.75rem 0;  /* Increased from 0.5rem */
   line-height: 1.6;
   position: relative;
 }
@@ -420,10 +421,13 @@ main {
   color: var(--primary-text);
   font-size: 1rem;
   resize: none;
-  max-height: 200px;
+  height: 3rem; /* Changed from max-height to fixed height */
+  min-height: auto; /* Removed min-height */
   outline: none;
   line-height: 1.5;
-  min-height: 3rem;
+  overflow-y: hidden; /* Hide vertical overflow */
+  white-space: nowrap; /* Prevent line breaks */
+  text-overflow: ellipsis; /* Add ellipsis for overflow */
 }
 
 #prompt-input::placeholder {
