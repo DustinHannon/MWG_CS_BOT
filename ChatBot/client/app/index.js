@@ -8,42 +8,14 @@ function sanitizeText(text) {
     return div.innerHTML;
 }
 
-// Enhanced URL validation and formatting
-function formatUrl(url, punctuation = '') {
-    try {
-        // Add https:// if protocol is missing
-        const urlToFormat = url.startsWith('http') ? url : `https://${url}`;
-        const urlObj = new URL(urlToFormat);
-        return `<a href="${urlToFormat}" 
-            target="_blank" 
-            rel="noopener noreferrer nofollow"
-            class="external-link"
-            aria-label="Opens in new tab: ${urlObj.hostname}">${url}</a>${punctuation}`;
-    } catch {
-        return url + punctuation;
-    }
-}
-
 // Convert markdown-like syntax to HTML with enhanced formatting
 function formatResponse(text) {
     if (!text || typeof text !== 'string') {
         return 'An error occurred while formatting the response.';
     }
 
-    // Don't escape HTML in the bot's response since it's trusted content
-    let sanitizedText = text;
-    
-    // Convert URLs to clickable links with improved regex
-    const urlRegex = /((?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+(?:\.[a-zA-Z]{2,})+(?:\/[^\s)*,!.?]*)?)/gi;
-    sanitizedText = sanitizedText.replace(urlRegex, (match) => {
-        // Extract any trailing punctuation
-        const punctuationMatch = match.match(/([^.,!?]*)([\.,!?])?$/);
-        if (punctuationMatch) {
-            const [, url, punctuation] = punctuationMatch;
-            return formatUrl(url, punctuation || '');
-        }
-        return formatUrl(match);
-    });
+    // First escape any HTML tags in the original text
+    let sanitizedText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
     
     // Format headings with proper hierarchy
     sanitizedText = sanitizedText.replace(/^### (.*?)$/gm, '<h3>$1</h3>');
