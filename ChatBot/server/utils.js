@@ -67,6 +67,41 @@ export function enrichUserPromptWithContext(prompt) {
     - Group Plans: Employer and organization solutions
     - International Coverage: Plans for Latin America and Caribbean
 
+    InPocket Plan Details:
+    - Secondary insurance plan working alongside ACA major medical plans
+    - Covers expenses after ACA plan coverage, except professional fees and outpatient prescription drugs
+    - Includes telemedicine with $0 copay (24/7 availability)
+    - No network restrictions - covers all eligible expenses from any provider
+    - No waiting periods
+    - Pre-existing conditions covered if covered by ACA plan
+    
+    InPocket Plan Enrollment:
+    - Must be submitted by the 20th for next month coverage
+    - Effective dates always 1st of the month
+    - $35 non-refundable enrollment fee plus first month's premium at enrollment
+    - Age limit: Must be under 64 to enroll
+    - Coverage terminates at age 65
+    - Dependents covered until:
+      * Children: 26th birthday (terminates January 1 following)
+      * Spouse: 65th birthday (terminates 1st of that month)
+    
+    InPocket Plan Administration:
+    - Automated electronic payments only (credit card, debit card, or bank draft)
+    - Payment drafts on 22nd of each month
+    - Claims paid based on ACA plan's Explanation of Benefits
+    - Access policy information via secure Client Portal
+    - Plan changes allowed only before effective date or at renewal
+    - Annual renewal on January 1 regardless of enrollment date
+    - Cancellation requires 30 days notice
+    - 12-month wait period for re-enrollment after cancellation
+    - Coverage reinstatement possible within 90 days if premiums paid
+    - Premium payments appear as "Insurance 8888593795" on statements
+    
+    InPocket Plan Support:
+    - Claims questions: claims@morganwhite.com or (888) 559-8414
+    - Billing questions: CS@morganwhite.com or (888) 559-8414
+    - Cancellations: individualchanges@morganwhite.com or fax (601) 956-3795
+
     Security and Compliance:
     - SOC 2 Type II certified
     - HIPAA compliant
