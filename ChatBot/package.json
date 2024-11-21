@@ -1,10 +1,11 @@
 {
   "name": "mwg-cs-bot",
   "version": "1.0.0",
-  "description": "Morgan White Group Customer Service ChatBot with enhanced features and usability. Note: This is a public GitHub repository, but marked as private in package.json to prevent accidental npm publishing.",
+  "description": "Morgan White Group Customer Service ChatBot with enhanced features and usability. Prerequisites: Node.js >= 16.0.0 must be installed from https://nodejs.org/. Note: This is a public GitHub repository, but marked as private in package.json to prevent accidental npm publishing.",
   "type": "module",
   "main": "server/main.js",
   "scripts": {
+    "preinstall": "node -e \"if (process.env.npm_config_global) { console.error('Please do not install this package globally. Run npm install without -g'); process.exit(1); }\"",
     "start": "node server/main.js",
     "dev": "nodemon server/main.js",
     "test": "jest"
