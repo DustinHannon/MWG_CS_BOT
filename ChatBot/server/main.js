@@ -1,81 +1,147 @@
 import express from 'express';
-import * as path from 'path';
-import bodyParser from 'body-parser';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
+import compression from 'compression';
+import session from 'express-session';
+import openaiService from './services/openaiService.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import { securityMiddleware } from './middleware/security.js';
 import config from './config/config.js';
-import { configureSecurityMiddleware } from './middleware/security.js';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
-import chatRoutes from './routes/chatRoutes.js';
 
-// Initialize express app
-export const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Configure security middleware
-configureSecurityMiddleware(app);
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-// Parse application/json request bodies with size limit
-app.use(bodyParser.json({ limit: '10kb' }));
-
-// Serve static files from client folder with proper headers
-app.use(express.static(path.join(process.cwd(), 'client'), {
-    setHeaders: (res, path) => {
-        // Cache static assets
-        if (path.endsWith('.js') || path.endsWith('.css')) {
-            res.set('Cache-Control', 'public, max-age=31536000'); // 1 year
-        } else if (path.endsWith('.png') || path.endsWith('.jpg') || path.endsWith('.ico')) {
-            res.set('Cache-Control', 'public, max-age=86400'); // 24 hours
-        }
-        
-        // Security headers for static files
-        res.set('X-Content-Type-Options', 'nosniff');
-        res.set('X-Frame-Options', 'DENY');
-        res.set('X-XSS-Protection', '1; mode=block');
+// Security middleware
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", 'cdnjs.cloudflare.com'],
+            styleSrc: ["'self'", "'unsafe-inline'", 'cdnjs.cloudflare.com'],
+            imgSrc: ["'self'", 'data:', 'blob:'],
+            connectSrc: ["'self'"],
+            fontSrc: ["'self'", 'cdnjs.cloudflare.com'],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"],
+        },
     },
-    // Enable Brotli/Gzip compression
-    maxAge: '1y',
-    etag: true,
-    lastModified: true
 }));
 
-// Add request ID middleware
-app.use((req, res, next) => {
-    req.id = crypto.randomUUID();
-    next();
+// Session configuration
+app.use(session({
+    secret: config.sessionSecret || 'your-secret-key',
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
 });
 
-// Add basic logging middleware
-app.use((req, res, next) => {
-    const start = Date.now();
-    res.on('finish', () => {
-        const duration = Date.now() - start;
-        console.log({
-            timestamp: new Date().toISOString(),
-            method: req.method,
-            path: req.path,
-            status: res.statusCode,
-            duration: `${duration}ms`,
-            requestId: req.id,
-            userAgent: req.get('user-agent'),
-            ip: req.ip
+// Middleware
+app.use(compression());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(limiter);
+app.use(securityMiddleware);
+
+// Serve static files
+app.use(express.static(path.join(__dirname, '../client')));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'healthy' });
+});
+
+// Session management endpoints
+app.post('/api/session', (req, res) => {
+    if (!req.session.id) {
+        req.session.regenerate((err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to create session' });
+            }
+            res.json({ sessionId: req.session.id });
         });
-    });
-    next();
+    } else {
+        res.json({ sessionId: req.session.id });
+    }
 });
 
-// Register routes
-app.use('/api', chatRoutes);
+app.delete('/api/session', (req, res) => {
+    if (req.session) {
+        openaiService.clearSession(req.session.id);
+        req.session.destroy((err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to destroy session' });
+            }
+            res.status(204).end();
+        });
+    } else {
+        res.status(404).json({ error: 'No session found' });
+    }
+});
 
-// Error handling
+// OpenAI endpoint
+app.post('/api/openai', async (req, res) => {
+    const { question } = req.body;
+
+    if (!question) {
+        return res.status(400).json({ error: 'Question is required' });
+    }
+
+    if (!req.session.id) {
+        return res.status(401).json({ error: 'No session found' });
+    }
+
+    try {
+        const response = await openaiService.generateResponse(question, req.session.id);
+        res.json({ data: response });
+    } catch (error) {
+        console.error('Error processing request:', error);
+
+        if (error.message.includes('Rate limit exceeded')) {
+            return res.status(429).json({ 
+                error: error.message,
+                retryAfter: error.retryAfter || 60
+            });
+        }
+
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Offline support - Service Worker
+app.get('/service-worker.js', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/service-worker.js'));
+});
+
+// Fallback route for SPA
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/index.html'));
+});
+
+// Error handling middleware
 app.use(errorHandler);
 
-// Handle 404 errors
-app.use(notFoundHandler);
-
 // Start server
-const PORT = config.port;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-    console.log(`Environment: ${config.nodeEnv}`);
-    console.log(`CORS origin: ${config.cors.origin}`);
 });
 
 // Handle uncaught exceptions

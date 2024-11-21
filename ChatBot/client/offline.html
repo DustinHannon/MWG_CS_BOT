@@ -3,134 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Morgan White Group | Offline</title>
-    <link rel="icon" type="image/png" href="images/favicon.ico">
+    <meta name="description" content="ChatBot - Currently Offline">
+    <title>ChatBot - Offline</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+</head>
+<body>
+    <div class="container">
+        <header role="banner">
+            <h1>Currently Offline</h1>
+        </header>
+
+        <main role="main">
+            <div class="offline-content">
+                <img src="/images/logo.png" alt="ChatBot Logo" width="100" height="100">
+                <p>You are currently offline. Please check your internet connection and try again.</p>
+                
+                <div class="offline-actions">
+                    <button onclick="window.location.reload()" class="retry-button">
+                        Try Again
+                    </button>
+                </div>
+
+                <div class="offline-info">
+                    <h2>While you're offline, you can:</h2>
+                    <ul>
+                        <li>Check your internet connection</li>
+                        <li>Review your previous messages (if cached)</li>
+                        <li>Queue new messages to be sent when back online</li>
+                    </ul>
+                </div>
+
+                <div class="connection-status">
+                    <p>Status: <span id="connection-state">Offline</span></p>
+                </div>
+            </div>
+        </main>
+
+        <footer role="contentinfo">
+            <p>Your messages will be automatically sent once you're back online.</p>
+        </footer>
+    </div>
+
     <style>
-        :root {
-            --primary-bg: #ffffff;
-            --primary-text: #2d3748;
-            --accent-color: #1B4B8F;
-            --error-color: #e53e3e;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            color: var(--primary-text);
-            line-height: 1.5;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
+        .offline-content {
             text-align: center;
-            background: url('https://morganwhite.com/common/img/bg.jpg') center center fixed;
-            background-size: cover;
-            position: relative;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(27, 75, 143, 0.85);
-            z-index: 0;
-        }
-
-        .offline-container {
-            position: relative;
-            z-index: 1;
-            background-color: rgba(255, 255, 255, 0.95);
             padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            width: 90%;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
-        .logo {
-            width: 200px;
-            height: auto;
+        .offline-content img {
             margin-bottom: 2rem;
         }
 
-        h1 {
-            color: var(--accent-color);
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        p {
-            margin-bottom: 1.5rem;
-            color: var(--primary-text);
-        }
-
-        .error-icon {
-            font-size: 3rem;
-            color: var(--error-color);
-            margin-bottom: 1rem;
+        .offline-actions {
+            margin: 2rem 0;
         }
 
         .retry-button {
-            background-color: var(--accent-color);
+            padding: 0.75rem 1.5rem;
+            background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
+            border-radius: 4px;
             cursor: pointer;
             font-size: 1rem;
-            transition: background-color 0.2s ease;
+            transition: background-color 0.3s;
         }
 
         .retry-button:hover {
-            background-color: #15407A;
+            background-color: #0056b3;
         }
 
-        @media (max-width: 480px) {
-            .offline-container {
-                padding: 1.5rem;
+        .offline-info {
+            text-align: left;
+            margin: 2rem 0;
+            padding: 1rem;
+            background-color: var(--message-bg-bot);
+            border-radius: 4px;
+        }
+
+        .offline-info h2 {
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .offline-info ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .offline-info li {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .offline-info li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--primary-color);
+        }
+
+        .connection-status {
+            margin-top: 2rem;
+            padding: 1rem;
+            background-color: var(--message-bg-user);
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        #connection-state {
+            color: var(--error-color);
+            font-weight: bold;
+        }
+
+        footer {
+            margin-top: 2rem;
+            padding: 1rem;
+            text-align: center;
+            color: var(--secondary-color);
+        }
+
+        @media (max-width: 768px) {
+            .offline-content {
+                padding: 1rem;
             }
 
-            .logo {
-                width: 150px;
-            }
-
-            h1 {
-                font-size: 1.25rem;
+            .offline-info {
+                margin: 1rem 0;
             }
         }
     </style>
-</head>
-<body>
-    <div class="offline-container">
-        <img src="images/logo.png" alt="Morgan White Group Logo" class="logo">
-        <div class="error-icon">⚠️</div>
-        <h1>You're Offline</h1>
-        <p>It seems you've lost your internet connection. Please check your connection and try again.</p>
-        <button class="retry-button" onclick="window.location.reload()">Try Again</button>
-    </div>
 
     <script>
-        // Check connection status
-        window.addEventListener('online', () => {
-            window.location.reload();
-        });
-
-        // Add keyboard support for retry button
-        document.querySelector('.retry-button').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                window.location.reload();
+        // Update connection status
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('connection-state');
+            if (navigator.onLine) {
+                statusElement.textContent = 'Online';
+                statusElement.style.color = 'var(--success-color)';
+            } else {
+                statusElement.textContent = 'Offline';
+                statusElement.style.color = 'var(--error-color)';
             }
+        }
+
+        // Listen for online/offline events
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+
+        // Initial check
+        updateConnectionStatus();
+
+        // Reload page when coming back online
+        window.addEventListener('online', () => {
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         });
     </script>
 </body>
