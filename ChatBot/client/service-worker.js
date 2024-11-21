@@ -1,120 +1,200 @@
-// Cache names
-const CACHE_NAME = 'mwg-chatbot-v1';
-const STATIC_CACHE = 'static-v1';
-const DYNAMIC_CACHE = 'dynamic-v1';
+const CACHE_NAME = 'chatbot-cache-v1';
+const OFFLINE_URL = '/offline.html';
 
-// Static assets to cache on install
 const STATIC_ASSETS = [
     '/',
     '/index.html',
+    '/offline.html',
     '/styles.css',
     '/app/index.js',
     '/app/modules/chatUI.js',
     '/app/modules/formHandler.js',
     '/app/modules/themeHandler.js',
-    '/images/logo.png',
     '/images/favicon.ico',
-    'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap'
+    '/images/logo.png',
+    'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css'
 ];
 
 // Install event - cache static assets
-self.addEventListener('install', event => {
+self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(STATIC_CACHE)
-            .then(cache => {
-                console.log('Caching static assets');
-                return cache.addAll(STATIC_ASSETS);
-            })
-            .catch(error => {
-                console.error('Error caching static assets:', error);
-            })
+        (async () => {
+            const cache = await caches.open(CACHE_NAME);
+            // Cache static assets
+            await cache.addAll(STATIC_ASSETS);
+            // Cache offline page
+            const offlineResponse = new Response(
+                '<html><head><title>Offline</title><link rel="stylesheet" href="/styles.css"></head>' +
+                '<body><div class="container"><h1>You are offline</h1>' +
+                '<p>Please check your internet connection and try again.</p></div></body></html>',
+                {
+                    headers: { 'Content-Type': 'text/html' }
+                }
+            );
+            await cache.put(OFFLINE_URL, offlineResponse);
+        })()
     );
 });
 
 // Activate event - clean up old caches
-self.addEventListener('activate', event => {
+self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys()
-            .then(cacheNames => {
-                return Promise.all(
-                    cacheNames
-                        .filter(name => name !== STATIC_CACHE && name !== DYNAMIC_CACHE)
-                        .map(name => {
-                            console.log('Deleting old cache:', name);
-                            return caches.delete(name);
-                        })
-                );
-            })
+        (async () => {
+            const cacheNames = await caches.keys();
+            await Promise.all(
+                cacheNames
+                    .filter(name => name !== CACHE_NAME)
+                    .map(name => caches.delete(name))
+            );
+            // Claim clients immediately
+            await clients.claim();
+        })()
     );
 });
 
-// Fetch event - serve from cache, fallback to network
-self.addEventListener('fetch', event => {
-    // Skip non-GET requests
-    if (event.request.method !== 'GET') return;
+// Helper function to determine if a request is for an API endpoint
+const isApiRequest = (request) => {
+    return request.url.includes('/api/');
+};
 
-    // Skip API requests
-    if (event.request.url.includes('/api/')) {
-        return;
-    }
+// Helper function to determine if a request is for a static asset
+const isStaticAsset = (url) => {
+    return STATIC_ASSETS.some(asset => url.endsWith(asset));
+};
 
+// Helper function to create a Response for network errors
+const createNetworkErrorResponse = () => {
+    return new Response(
+        JSON.stringify({
+            error: 'Network error. Please check your connection and try again.'
+        }),
+        {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+        }
+    );
+};
+
+// Fetch event - handle requests
+self.addEventListener('fetch', (event) => {
     event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                // Return cached response if found
-                if (response) {
-                    return response;
-                }
+        (async () => {
+            try {
+                const cache = await caches.open(CACHE_NAME);
 
-                // Otherwise fetch from network
-                return fetch(event.request)
-                    .then(networkResponse => {
-                        // Cache dynamic assets
-                        if (shouldCacheResponse(networkResponse)) {
-                            return caches.open(DYNAMIC_CACHE)
-                                .then(cache => {
-                                    cache.put(event.request, networkResponse.clone());
-                                    return networkResponse;
-                                });
-                        }
-                        return networkResponse;
-                    })
-                    .catch(error => {
-                        console.error('Fetch error:', error);
-                        // Return offline page or fallback content
-                        return caches.match('/offline.html');
-                    });
-            })
+                // Try the network first
+                try {
+                    const networkResponse = await fetch(event.request);
+                    
+                    // Cache successful GET requests for static assets
+                    if (event.request.method === 'GET' && isStaticAsset(event.request.url)) {
+                        await cache.put(event.request, networkResponse.clone());
+                    }
+                    
+                    return networkResponse;
+                } catch (error) {
+                    // Network failed, try cache
+                    const cachedResponse = await cache.match(event.request);
+                    
+                    if (cachedResponse) {
+                        return cachedResponse;
+                    }
+
+                    // If it's an API request, return a network error response
+                    if (isApiRequest(event.request)) {
+                        return createNetworkErrorResponse();
+                    }
+
+                    // For page requests, return the offline page
+                    if (event.request.mode === 'navigate') {
+                        const offlineResponse = await cache.match(OFFLINE_URL);
+                        return offlineResponse;
+                    }
+
+                    // For other requests, throw the error
+                    throw error;
+                }
+            } catch (error) {
+                console.error('Service Worker Error:', error);
+                return createNetworkErrorResponse();
+            }
+        })()
     );
 });
 
-// Helper function to determine if response should be cached
-function shouldCacheResponse(response) {
-    // Only cache successful responses
-    if (!response || response.status !== 200) return false;
+// Handle background sync for queued messages
+self.addEventListener('sync', (event) => {
+    if (event.tag === 'sync-messages') {
+        event.waitUntil(
+            (async () => {
+                try {
+                    const cache = await caches.open(CACHE_NAME);
+                    const requests = await cache.keys();
+                    const queuedRequests = requests.filter(request => 
+                        request.url.includes('/api/openai') && 
+                        request.method === 'POST'
+                    );
 
-    // Only cache GET requests
-    if (response.method !== 'GET') return false;
-
-    // Check content type
-    const contentType = response.headers.get('content-type');
-    if (contentType) {
-        // Cache common static asset types
-        return contentType.includes('text/html') ||
-               contentType.includes('text/css') ||
-               contentType.includes('application/javascript') ||
-               contentType.includes('image/');
+                    await Promise.all(queuedRequests.map(async (request) => {
+                        try {
+                            await fetch(request);
+                            await cache.delete(request);
+                        } catch (error) {
+                            console.error('Failed to sync message:', error);
+                        }
+                    }));
+                } catch (error) {
+                    console.error('Sync error:', error);
+                }
+            })()
+        );
     }
-
-    return false;
-}
-
-// Handle errors
-self.addEventListener('error', event => {
-    console.error('Service Worker error:', event.error);
 });
 
-// Handle unhandled promise rejections
-self.addEventListener('unhandledrejection', event => {
-    console.error('Service Worker unhandled rejection:', event.reason);
+// Handle push notifications
+self.addEventListener('push', (event) => {
+    const options = {
+        body: event.data.text(),
+        icon: '/images/logo.png',
+        badge: '/images/favicon.ico',
+        vibrate: [100, 50, 100],
+        data: {
+            dateOfArrival: Date.now(),
+            primaryKey: 1
+        },
+        actions: [
+            {
+                action: 'explore',
+                title: 'View Message'
+            },
+            {
+                action: 'close',
+                title: 'Close'
+            }
+        ]
+    };
+
+    event.waitUntil(
+        self.registration.showNotification('New Message', options)
+    );
+});
+
+// Handle notification clicks
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    if (event.action === 'explore') {
+        event.waitUntil(
+            clients.matchAll({ type: 'window' }).then((clientList) => {
+                for (const client of clientList) {
+                    if (client.url === '/' && 'focus' in client) {
+                        return client.focus();
+                    }
+                }
+                if (clients.openWindow) {
+                    return clients.openWindow('/');
+                }
+            })
+        );
+    }
 });
