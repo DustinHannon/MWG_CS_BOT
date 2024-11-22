@@ -7,8 +7,8 @@
   "scripts": {
     "start": "node server/main.js",
     "dev": "nodemon server/main.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.cjs",
-    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.cjs --watch",
+    "test": "node --experimental-vm-modules --experimental-import-meta-resolve node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules --experimental-import-meta-resolve node_modules/jest/bin/jest.js --watch",
     "security-audit": "npm audit fix --force",
     "update-deps": "npm update --save/--save-dev && npm audit fix --force"
   },
