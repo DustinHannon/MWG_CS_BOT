@@ -15,7 +15,7 @@ const config = {
     // Security settings
     cors: {
         origin: process.env.NODE_ENV === 'production' 
-            ? process.env.PRODUCTION_DOMAIN
+            ? '*' // Allow all origins in production since we're using Azure Web Apps
             : 'http://localhost:3000',
         methods: ['GET', 'POST'],
         allowedHeaders: ['Content-Type']
