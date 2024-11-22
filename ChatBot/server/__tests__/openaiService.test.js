@@ -1,33 +1,46 @@
-import openaiService from '../services/openaiService.js';
-
 describe('OpenAI Service', () => {
-    test('should be defined', () => {
+    let openaiService;
+
+    beforeAll(async () => {
+        openaiService = await import('../services/openaiService.js').then(m => m.default);
+    });
+
+    test('service should be defined', () => {
         expect(openaiService).toBeDefined();
     });
 
-    test('should have required methods', () => {
-        expect(typeof openaiService.generateResponse).toBe('function');
-        expect(typeof openaiService.generateSessionId).toBe('function');
-        expect(typeof openaiService.getRateLimit).toBe('function');
-        expect(typeof openaiService.checkRateLimit).toBe('function');
+    test('service should have required methods', () => {
+        const methods = [
+            'generateResponse',
+            'generateSessionId',
+            'getRateLimit',
+            'checkRateLimit',
+            'updateRateLimit'
+        ];
+
+        methods.forEach(method => {
+            expect(openaiService[method]).toBeDefined();
+            expect(typeof openaiService[method]).toBe('function');
+        });
     });
 
-    // Mock tests - actual API calls should be tested with proper mocking
-    describe('Session Management', () => {
-        test('should generate unique session IDs', () => {
-            const sessionId1 = openaiService.generateSessionId('user1');
-            const sessionId2 = openaiService.generateSessionId('user1');
-            expect(sessionId1).not.toBe(sessionId2);
-        });
+    test('should generate unique session IDs', () => {
+        const id1 = openaiService.generateSessionId('user1');
+        const id2 = openaiService.generateSessionId('user1');
+        expect(id1).not.toBe(id2);
+        expect(typeof id1).toBe('string');
+        expect(id1.length).toBeGreaterThan(0);
+    });
 
-        test('should manage rate limits', () => {
-            const sessionId = openaiService.generateSessionId('user1');
-            const initialLimit = openaiService.getRateLimit(sessionId);
-            expect(initialLimit.requests).toBe(0);
-            
-            openaiService.updateRateLimit(sessionId);
-            const updatedLimit = openaiService.getRateLimit(sessionId);
-            expect(updatedLimit.requests).toBe(1);
-        });
+    test('should handle rate limits correctly', () => {
+        const sessionId = openaiService.generateSessionId('testUser');
+        const initialLimit = openaiService.getRateLimit(sessionId);
+        
+        expect(initialLimit.requests).toBe(0);
+        expect(initialLimit.resetTime).toBeDefined();
+        
+        openaiService.updateRateLimit(sessionId);
+        const updatedLimit = openaiService.getRateLimit(sessionId);
+        expect(updatedLimit.requests).toBe(1);
     });
 });

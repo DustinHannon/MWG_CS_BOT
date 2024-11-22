@@ -2,14 +2,13 @@
   "name": "mwg-cs-bot",
   "version": "1.0.0",
   "description": "Morgan White Group Customer Service ChatBot with enhanced features and usability. Prerequisites: Node.js >= 16.0.0 must be installed from https://nodejs.org/",
-  "type": "module",
   "main": "server/main.js",
+  "type": "module",
   "scripts": {
     "start": "node server/main.js",
     "dev": "nodemon server/main.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --passWithNoTests",
-    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
-    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test": "cross-env NODE_ENV=test jest",
+    "test:watch": "cross-env NODE_ENV=test jest --watch",
     "security-audit": "npm audit fix --force",
     "update-deps": "npm update --save/--save-dev && npm audit fix --force"
   },
@@ -25,7 +24,12 @@
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
-    "jest": "^29.6.3",
+    "@babel/core": "^7.23.2",
+    "@babel/preset-env": "^7.23.2",
+    "babel-jest": "^29.7.0",
+    "cross-env": "^7.0.3",
+    "jest": "^29.7.0",
+    "jest-environment-node": "^29.7.0",
     "nodemon": "^3.0.1"
   },
   "overrides": {
