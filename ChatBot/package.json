@@ -42,7 +42,8 @@
     "@babel/traverse": "^7.23.2"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=16.0.0",
+    "npm": ">=10.9.1"
   },
   "repository": {
     "type": "git",
