@@ -1,19 +1,32 @@
 import { jest } from '@jest/globals';
-import openaiService from '../services/openaiService.js';
 
-// Mock crypto for consistent session IDs in tests
-jest.mock('crypto', () => ({
-    createHash: () => ({
-        update: () => ({
-            digest: () => 'test-hash'
-        })
-    })
+// Mock modules before importing the service
+jest.unstable_mockModule('../config/config.js', () => ({
+    default: {
+        openaiApiKey: 'test-key',
+        openai: {
+            model: 'test-model',
+            maxTokens: 100
+        }
+    }
 }));
+
+jest.unstable_mockModule('node-fetch', () => ({
+    default: jest.fn()
+}));
+
+jest.unstable_mockModule('dotenv', () => ({
+    config: jest.fn()
+}));
+
+// Import the service after setting up mocks
+const openaiService = await import('../services/openaiService.js').then(m => m.default);
 
 describe('OpenAI Service', () => {
     beforeEach(() => {
-        // Clear all rate limits before each test
+        // Clear all rate limits and mocks before each test
         openaiService.rateLimits.clear();
+        jest.clearAllMocks();
     });
 
     test('service should be defined', () => {
@@ -76,5 +89,10 @@ describe('OpenAI Service', () => {
         
         // Restore original Date.now
         global.Date.now = realDateNow;
+    });
+
+    afterAll(() => {
+        // Clean up any remaining mocks
+        jest.restoreAllMocks();
     });
 });
