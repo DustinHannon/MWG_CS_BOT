@@ -1,15 +1,12 @@
 /** @type {import('jest').Config} */
 module.exports = {
     testEnvironment: 'node',
-    extensionsToTreatAsEsm: ['.js'],
+    transform: {},
     moduleNameMapper: {
         '^(\\.{1,2}/.*)\\.js$': '$1'
     },
-    transform: {
-        '^.+\\.js$': ['babel-jest', { configFile: './babel.config.cjs' }]
-    },
     transformIgnorePatterns: [
-        'node_modules/(?!(node-fetch|data-uri-to-buffer|fetch-blob|formdata-polyfill)/)'
+        '/node_modules/'
     ],
     testMatch: [
         '**/__tests__/**/*.js',
@@ -18,5 +15,8 @@ module.exports = {
     verbose: true,
     clearMocks: true,
     resetMocks: true,
-    restoreMocks: true
+    restoreMocks: true,
+    testEnvironmentOptions: {
+        url: 'http://localhost'
+    }
 };

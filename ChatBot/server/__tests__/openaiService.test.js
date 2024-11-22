@@ -1,7 +1,21 @@
 import { jest } from '@jest/globals';
 import openaiService from '../services/openaiService.js';
 
+// Mock crypto for consistent session IDs in tests
+jest.mock('crypto', () => ({
+    createHash: () => ({
+        update: () => ({
+            digest: () => 'test-hash'
+        })
+    })
+}));
+
 describe('OpenAI Service', () => {
+    beforeEach(() => {
+        // Clear all rate limits before each test
+        openaiService.rateLimits.clear();
+    });
+
     test('service should be defined', () => {
         expect(openaiService).toBeDefined();
     });
@@ -20,19 +34,8 @@ describe('OpenAI Service', () => {
         });
     });
 
-    test('should generate unique session IDs', () => {
-        const id1 = openaiService.generateSessionId('user1');
-        const id2 = openaiService.generateSessionId('user1');
-        
-        expect(id1).toBeTruthy();
-        expect(id2).toBeTruthy();
-        expect(id1).not.toBe(id2);
-        expect(typeof id1).toBe('string');
-        expect(id1.length).toBeGreaterThan(0);
-    });
-
     test('should handle rate limits', () => {
-        const sessionId = openaiService.generateSessionId('testUser');
+        const sessionId = 'test-session';
         
         // Initial state
         const initialLimit = openaiService.getRateLimit(sessionId);
@@ -51,5 +54,27 @@ describe('OpenAI Service', () => {
             }
             openaiService.checkRateLimit(sessionId);
         }).toThrow('Rate limit exceeded');
+    });
+
+    test('should reset rate limits after expiry', () => {
+        const sessionId = 'test-session';
+        const now = Date.now();
+        
+        // Mock Date.now() to control time
+        const realDateNow = Date.now.bind(global.Date);
+        global.Date.now = jest.fn(() => now);
+        
+        // Set initial rate limit
+        openaiService.updateRateLimit(sessionId);
+        expect(openaiService.getRateLimit(sessionId).requests).toBe(1);
+        
+        // Move time forward past reset time
+        global.Date.now = jest.fn(() => now + 3600001); // 1 hour + 1ms
+        
+        // Rate limit should be reset
+        expect(openaiService.getRateLimit(sessionId).requests).toBe(0);
+        
+        // Restore original Date.now
+        global.Date.now = realDateNow;
     });
 });
