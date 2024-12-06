@@ -14,7 +14,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+
+// Azure Web Apps will set process.env.PORT to 8080
+// We need to ensure our app uses this port when deployed to Azure
+const PORT = process.env.WEBSITE_HOSTNAME ? 8080 : (process.env.PORT || 3000);
 
 // Security middleware
 app.use(helmet({
@@ -66,7 +69,12 @@ app.use(express.static(path.join(__dirname, '../client')));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'healthy' });
+    res.status(200).json({ 
+        status: 'healthy',
+        port: PORT,
+        env: process.env.NODE_ENV,
+        isAzure: !!process.env.WEBSITE_HOSTNAME
+    });
 });
 
 // Session management endpoints
@@ -142,6 +150,8 @@ app.use(errorHandler);
 // Start server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV}`);
+    console.log(`Running on Azure: ${!!process.env.WEBSITE_HOSTNAME}`);
 });
 
 // Handle uncaught exceptions
