@@ -6,7 +6,7 @@ dotenv.config();
 // Validate and export environment variables
 const config = {
     // Server configuration
-    port: process.env.PORT || 3000,
+    port: process.env.WEBSITE_HOSTNAME ? 8080 : (process.env.PORT || 3000),
     nodeEnv: process.env.NODE_ENV || 'development',
     
     // API Keys

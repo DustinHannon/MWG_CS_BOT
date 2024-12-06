@@ -15,8 +15,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Azure Web Apps will set process.env.PORT to 8080
-// We need to ensure our app uses this port when deployed to Azure
+// Force port 8080 when running on Azure Web Apps
 const PORT = process.env.WEBSITE_HOSTNAME ? 8080 : (process.env.PORT || 3000);
 
 // Security middleware
@@ -152,6 +151,9 @@ app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV}`);
     console.log(`Running on Azure: ${!!process.env.WEBSITE_HOSTNAME}`);
+}).on('error', (error) => {
+    console.error('Server failed to start:', error);
+    process.exit(1);
 });
 
 // Handle uncaught exceptions
