@@ -79,6 +79,7 @@ jobs:
         with:
           app-name: 'MWGCSBot'
           slot-name: 'Production'
+          mask-inputs: true
           app-settings-json: |
             [
               {
