@@ -6,24 +6,52 @@ dotenv.config();
 // Helper function to parse Azure Redis connection string
 const parseAzureRedisConfig = () => {
     const connectionString = process.env.AZURE_REDIS_CONNECTION_STRING;
-    if (!connectionString) return null;
+    if (!connectionString) {
+        console.error('AZURE_REDIS_CONNECTION_STRING environment variable is not set');
+        return null;
+    }
 
     try {
         // Azure Redis connection string format:
         // hostname:port,password=password,ssl=True,abortConnect=False
         const [hostPort, ...settings] = connectionString.split(',');
-        const password = settings
-            .find(s => s.startsWith('password='))
-            ?.replace('password=', '');
+        
+        // Validate host:port format
+        if (!hostPort || !hostPort.includes(':')) {
+            throw new Error('Invalid host:port format in Redis connection string');
+        }
 
-        if (!password) {
+        // Extract password
+        const passwordSetting = settings.find(s => s.toLowerCase().startsWith('password='));
+        if (!passwordSetting) {
             throw new Error('Password not found in Redis connection string');
+        }
+        
+        const password = passwordSetting.replace(/^password=/i, '');
+        if (!password) {
+            throw new Error('Empty password in Redis connection string');
+        }
+
+        // Validate SSL setting
+        const sslSetting = settings.find(s => s.toLowerCase().startsWith('ssl='));
+        if (!sslSetting || sslSetting.toLowerCase() !== 'ssl=true') {
+            console.warn('Warning: SSL should be enabled for Azure Redis');
         }
 
         // Construct Redis URL with SSL
-        return `rediss://:${password}@${hostPort}`;
+        const redisUrl = `rediss://:${encodeURIComponent(password)}@${hostPort}`;
+        
+        // Validate final URL format
+        try {
+            new URL(redisUrl);
+        } catch (err) {
+            throw new Error(`Invalid Redis URL format: ${err.message}`);
+        }
+
+        return redisUrl;
     } catch (err) {
-        console.error('Error parsing Redis connection string:', err);
+        console.error('Error parsing Redis connection string:', err.message);
+        console.error('Connection string format should be: hostname:port,password=password,ssl=True,abortConnect=False');
         return null;
     }
 };
@@ -88,6 +116,15 @@ const validateConfig = () => {
     
     if (missingVars.length > 0) {
         throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+    }
+
+    // Validate Redis configuration if URL is present
+    if (config.redis.url) {
+        try {
+            new URL(config.redis.url);
+        } catch (err) {
+            throw new Error(`Invalid Redis URL format: ${err.message}`);
+        }
     }
     
     return config;

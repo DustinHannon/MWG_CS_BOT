@@ -27,44 +27,76 @@ try {
             socket: {
                 tls: true,
                 rejectUnauthorized: false, // Required for Azure Redis SSL
-                keepAlive: 30000, // Increase keepalive to prevent timeouts
-            },
-            retry_strategy: function(options) {
-                if (options.error && options.error.code === 'ECONNREFUSED') {
-                    // End reconnecting on a specific error
-                    return new Error('The server refused the connection');
+                keepAlive: 5000, // Reduced keepalive interval for more frequent checks
+                connectTimeout: 30000, // Increased connection timeout
+                reconnectStrategy: (retries) => {
+                    if (retries > 50) {
+                        console.error('Max Redis reconnection attempts reached');
+                        return new Error('Max reconnection attempts reached');
+                    }
+                    // Exponential backoff with max delay of 10 seconds
+                    return Math.min(Math.pow(2, retries) * 100, 10000);
                 }
+            },
+            // Improved retry configuration
+            retryStrategy: function(options) {
+                if (options.error) {
+                    console.error('Redis retry error:', options.error);
+                    if (options.error.code === 'ECONNREFUSED') {
+                        return new Error('Redis server refused connection');
+                    }
+                    if (options.error.code === 'ENOTFOUND') {
+                        return new Error('Redis host not found');
+                    }
+                }
+                
+                // Try to reconnect for up to 1 hour
                 if (options.total_retry_time > 1000 * 60 * 60) {
-                    // End reconnecting after a specific timeout
                     return new Error('Retry time exhausted');
                 }
-                if (options.attempt > 10) {
-                    // End reconnecting with built in error
-                    return undefined;
-                }
-                // Reconnect after
-                return Math.min(options.attempt * 100, 3000);
+                
+                // Exponential backoff
+                const delay = Math.min(options.attempt * 1000, 30000);
+                console.log(`Retrying Redis connection in ${delay}ms...`);
+                return delay;
             }
         });
 
-        // Handle Redis events
+        // Enhanced Redis event handling
         redisClient.on('error', (err) => {
             console.error('Redis Client Error:', err);
+            console.error('Redis Connection String Format:', 
+                config.redis.url.replace(/\/\/.*@/, '//***:***@')); // Log redacted connection string
         });
 
         redisClient.on('connect', () => {
             console.log('Connected to Redis successfully');
         });
 
-        redisClient.on('reconnecting', () => {
-            console.log('Reconnecting to Redis...');
+        redisClient.on('reconnecting', (params) => {
+            console.log('Reconnecting to Redis...', {
+                attempt: params?.attempt,
+                totalRetryTime: params?.totalRetryTime
+            });
+        });
+
+        redisClient.on('ready', () => {
+            console.log('Redis client is ready for operations');
         });
 
         await redisClient.connect();
-        console.log('Redis client connected');
+        
+        // Verify connection with a ping
+        const pingResult = await redisClient.ping();
+        console.log('Redis connection verified with PING:', pingResult);
     }
 } catch (err) {
     console.error('Failed to create Redis client:', err);
+    console.error('Error details:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack
+    });
     redisClient = null;
 }
 
