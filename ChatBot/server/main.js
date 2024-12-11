@@ -46,7 +46,19 @@ try {
 // Security middleware
 app.use(helmet({
     contentSecurityPolicy: {
-        directives: config.csp.directives
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", 'cdnjs.cloudflare.com'],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", 'data:', 'blob:', 'https://morganwhite.com', 'https://*.morganwhite.com'],
+            connectSrc: ["'self'", 'https://api.openai.com'],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"]
+        }
     },
     crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: { policy: "cross-origin" }
@@ -84,8 +96,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/', limiter);
 app.use(securityMiddleware);
 
-// Serve static files
-app.use(express.static(path.join(__dirname, '../client')));
+// Serve static files with correct MIME types
+app.use(express.static(path.join(__dirname, '../client'), {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+        }
+    }
+}));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
