@@ -5,9 +5,10 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import compression from 'compression';
 import session from 'express-session';
+import cors from 'cors';
 import openaiService from './services/openaiService.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { securityMiddleware } from './middleware/security.js';
+import { securityMiddleware, validateInput } from './middleware/security.js';
 import config from './config/config.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,19 +19,14 @@ const app = express();
 // Security middleware
 app.use(helmet({
     contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", 'cdnjs.cloudflare.com'],
-            styleSrc: ["'self'", "'unsafe-inline'", 'cdnjs.cloudflare.com'],
-            imgSrc: ["'self'", 'data:', 'blob:'],
-            connectSrc: ["'self'", "https://api.openai.com"],
-            fontSrc: ["'self'", 'cdnjs.cloudflare.com'],
-            objectSrc: ["'none'"],
-            mediaSrc: ["'self'"],
-            frameSrc: ["'none'"],
-        },
+        directives: config.csp.directives
     },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
+
+// CORS configuration
+app.use(cors(config.cors));
 
 // Session configuration
 app.use(session({
@@ -57,7 +53,7 @@ const limiter = rateLimit({
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(limiter);
+app.use('/api/', limiter);
 app.use(securityMiddleware);
 
 // Serve static files
@@ -100,20 +96,14 @@ app.delete('/api/session', (req, res) => {
     }
 });
 
-// OpenAI endpoint
-app.post('/api/openai', async (req, res) => {
-    const { question } = req.body;
-
-    if (!question) {
-        return res.status(400).json({ error: 'Question is required' });
-    }
-
+// OpenAI endpoint with input validation
+app.post('/api/openai', validateInput, async (req, res) => {
     if (!req.session.id) {
         return res.status(401).json({ error: 'No session found' });
     }
 
     try {
-        const response = await openaiService.generateResponse(question, req.session.id);
+        const response = await openaiService.generateResponse(req.body.question, req.session.id);
         res.json({ data: response });
     } catch (error) {
         console.error('Error processing request:', error);
