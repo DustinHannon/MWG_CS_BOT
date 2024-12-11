@@ -15,9 +15,6 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Force port 8080 when running on Azure Web Apps
-const PORT = process.env.WEBSITE_HOSTNAME ? 8080 : (process.env.PORT || 3000);
-
 // Security middleware
 app.use(helmet({
     contentSecurityPolicy: {
@@ -26,7 +23,7 @@ app.use(helmet({
             scriptSrc: ["'self'", "'unsafe-inline'", 'cdnjs.cloudflare.com'],
             styleSrc: ["'self'", "'unsafe-inline'", 'cdnjs.cloudflare.com'],
             imgSrc: ["'self'", 'data:', 'blob:'],
-            connectSrc: ["'self'"],
+            connectSrc: ["'self'", "https://api.openai.com"],
             fontSrc: ["'self'", 'cdnjs.cloudflare.com'],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
@@ -37,11 +34,11 @@ app.use(helmet({
 
 // Session configuration
 app.use(session({
-    secret: config.sessionSecret || 'your-secret-key',
+    secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
     saveUninitialized: true,
     cookie: {
-        secure: process.env.NODE_ENV === 'production',
+        secure: true,
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
@@ -49,8 +46,8 @@ app.use(session({
 
 // Rate limiting
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    windowMs: config.rateLimit.windowMs,
+    max: config.rateLimit.max,
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
@@ -70,9 +67,8 @@ app.use(express.static(path.join(__dirname, '../client')));
 app.get('/health', (req, res) => {
     res.status(200).json({ 
         status: 'healthy',
-        port: PORT,
-        env: process.env.NODE_ENV,
-        isAzure: !!process.env.WEBSITE_HOSTNAME
+        port: config.port,
+        env: config.nodeEnv
     });
 });
 
@@ -147,10 +143,9 @@ app.get('*', (req, res) => {
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV}`);
-    console.log(`Running on Azure: ${!!process.env.WEBSITE_HOSTNAME}`);
+app.listen(config.port, () => {
+    console.log(`Server is running on port ${config.port}`);
+    console.log(`Environment: ${config.nodeEnv}`);
 }).on('error', (error) => {
     console.error('Server failed to start:', error);
     process.exit(1);
