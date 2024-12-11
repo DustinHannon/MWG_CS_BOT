@@ -21,23 +21,32 @@ const app = express();
 // Initialize Redis client
 let redisClient;
 try {
-    redisClient = createClient({
-        url: config.redis.url,
-        password: config.redis.password,
-        socket: {
-            tls: config.redis.tls
-        }
-    });
+    // Parse Redis connection string if provided
+    const redisUrl = config.redis.url;
+    if (redisUrl) {
+        // Ensure URL starts with redis:// or rediss:// protocol
+        const url = new URL(redisUrl.startsWith('redis://') || redisUrl.startsWith('rediss://') 
+            ? redisUrl 
+            : `redis://${redisUrl}`);
 
-    await redisClient.connect();
-    
-    redisClient.on('error', (err) => {
-        console.error('Redis Client Error:', err);
-    });
+        redisClient = createClient({
+            url: url.toString(),
+            socket: {
+                tls: config.redis.tls,
+                rejectUnauthorized: false // Required for Azure Redis SSL
+            }
+        });
 
-    redisClient.on('connect', () => {
-        console.log('Connected to Redis successfully');
-    });
+        await redisClient.connect();
+        
+        redisClient.on('error', (err) => {
+            console.error('Redis Client Error:', err);
+        });
+
+        redisClient.on('connect', () => {
+            console.log('Connected to Redis successfully');
+        });
+    }
 } catch (err) {
     console.error('Failed to create Redis client:', err);
     // Continue without Redis - will fall back to MemoryStore with warning
@@ -48,11 +57,11 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", 'cdnjs.cloudflare.com'],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", 'data:', 'blob:', 'https://morganwhite.com', 'https://*.morganwhite.com'],
-            connectSrc: ["'self'", 'https://api.openai.com'],
-            fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+            imgSrc: ["'self'", "data:", "blob:", "https://morganwhite.com", "https://*.morganwhite.com"],
+            connectSrc: ["'self'", "https://api.openai.com", "https://morganwhite.com", "https://*.morganwhite.com", "https://insuranceforeveryone.com", "https://www.linkedin.com"],
+            fontSrc: ["'self'", "data:"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
             frameSrc: ["'none'"],
@@ -68,8 +77,7 @@ app.use(helmet({
 app.use(cors(config.cors));
 
 // Session configuration
-app.use(session({
-    store: redisClient ? new RedisStore({ client: redisClient }) : undefined,
+const sessionConfig = {
     secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
     saveUninitialized: true,
@@ -78,7 +86,17 @@ app.use(session({
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
-}));
+};
+
+// Add Redis store if Redis client is connected
+if (redisClient?.isReady) {
+    sessionConfig.store = new RedisStore({ client: redisClient });
+    console.log('Using Redis session store');
+} else {
+    console.log('Using default MemoryStore for sessions');
+}
+
+app.use(session(sessionConfig));
 
 // Rate limiting
 const limiter = rateLimit({
