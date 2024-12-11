@@ -3,28 +3,25 @@ import * as dotenv from 'dotenv';
 // Load environment variables from .env file
 dotenv.config();
 
-// Helper function to parse Redis connection string
-const parseRedisConfig = () => {
-    const connectionString = process.env.REDIS_URL || process.env.AZURE_REDIS_CONNECTION_STRING;
+// Helper function to parse Azure Redis connection string
+const parseAzureRedisConfig = () => {
+    const connectionString = process.env.AZURE_REDIS_CONNECTION_STRING;
     if (!connectionString) return null;
 
-    // If it's already a proper Redis URL, return it
-    if (connectionString.startsWith('redis://') || connectionString.startsWith('rediss://')) {
-        return connectionString;
-    }
-
-    // For Azure Redis connection strings, they typically look like:
-    // hostname:port,password=password,ssl=True,abortConnect=False
     try {
-        const parts = connectionString.split(',');
-        const hostPort = parts[0];
-        const password = parts.find(p => p.startsWith('password='))?.split('=')[1];
-        const ssl = parts.find(p => p.startsWith('ssl='))?.split('=')[1] === 'True';
+        // Azure Redis connection string format:
+        // hostname:port,password=password,ssl=True,abortConnect=False
+        const [hostPort, ...settings] = connectionString.split(',');
+        const password = settings
+            .find(s => s.startsWith('password='))
+            ?.replace('password=', '');
 
-        if (password) {
-            return `redis${ssl ? 's' : ''}://:${password}@${hostPort}`;
+        if (!password) {
+            throw new Error('Password not found in Redis connection string');
         }
-        return `redis${ssl ? 's' : ''}://${hostPort}`;
+
+        // Construct Redis URL with SSL
+        return `rediss://:${password}@${hostPort}`;
     } catch (err) {
         console.error('Error parsing Redis connection string:', err);
         return null;
@@ -42,8 +39,8 @@ const config = {
     
     // Redis configuration
     redis: {
-        url: parseRedisConfig(),
-        tls: process.env.NODE_ENV === 'production'
+        url: parseAzureRedisConfig(),
+        tls: true // Always true for Azure Redis
     },
     
     // Security settings

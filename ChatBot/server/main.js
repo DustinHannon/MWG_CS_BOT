@@ -21,24 +21,33 @@ const app = express();
 // Initialize Redis client
 let redisClient;
 try {
-    // Parse Redis connection string if provided
-    const redisUrl = config.redis.url;
-    if (redisUrl) {
-        // Ensure URL starts with redis:// or rediss:// protocol
-        const url = new URL(redisUrl.startsWith('redis://') || redisUrl.startsWith('rediss://') 
-            ? redisUrl 
-            : `redis://${redisUrl}`);
-
+    if (config.redis.url) {
         redisClient = createClient({
-            url: url.toString(),
+            url: config.redis.url,
             socket: {
-                tls: config.redis.tls,
-                rejectUnauthorized: false // Required for Azure Redis SSL
+                tls: true,
+                rejectUnauthorized: false, // Required for Azure Redis SSL
+                keepAlive: 30000, // Increase keepalive to prevent timeouts
+            },
+            retry_strategy: function(options) {
+                if (options.error && options.error.code === 'ECONNREFUSED') {
+                    // End reconnecting on a specific error
+                    return new Error('The server refused the connection');
+                }
+                if (options.total_retry_time > 1000 * 60 * 60) {
+                    // End reconnecting after a specific timeout
+                    return new Error('Retry time exhausted');
+                }
+                if (options.attempt > 10) {
+                    // End reconnecting with built in error
+                    return undefined;
+                }
+                // Reconnect after
+                return Math.min(options.attempt * 100, 3000);
             }
         });
 
-        await redisClient.connect();
-        
+        // Handle Redis events
         redisClient.on('error', (err) => {
             console.error('Redis Client Error:', err);
         });
@@ -46,10 +55,17 @@ try {
         redisClient.on('connect', () => {
             console.log('Connected to Redis successfully');
         });
+
+        redisClient.on('reconnecting', () => {
+            console.log('Reconnecting to Redis...');
+        });
+
+        await redisClient.connect();
+        console.log('Redis client connected');
     }
 } catch (err) {
     console.error('Failed to create Redis client:', err);
-    // Continue without Redis - will fall back to MemoryStore with warning
+    redisClient = null;
 }
 
 // Security middleware
@@ -90,7 +106,12 @@ const sessionConfig = {
 
 // Add Redis store if Redis client is connected
 if (redisClient?.isReady) {
-    sessionConfig.store = new RedisStore({ client: redisClient });
+    const redisStore = new RedisStore({ 
+        client: redisClient,
+        prefix: 'mwgcsbot:',
+        ttl: 86400 // 1 day in seconds
+    });
+    sessionConfig.store = redisStore;
     console.log('Using Redis session store');
 } else {
     console.log('Using default MemoryStore for sessions');
@@ -129,7 +150,8 @@ app.get('/health', (req, res) => {
         status: 'healthy',
         port: config.port,
         env: config.nodeEnv,
-        redisConnected: !!redisClient?.isReady
+        redisConnected: !!redisClient?.isReady,
+        sessionStore: redisClient?.isReady ? 'redis' : 'memory'
     });
 });
 
