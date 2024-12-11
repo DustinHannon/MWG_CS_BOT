@@ -7,27 +7,21 @@
     <title>Morgan White Group | AI Assistant</title>
     <link rel="icon" type="image/png" href="images/favicon.ico">
     <link rel="stylesheet" href="styles.css">
-    <style>
-        /* Fallback font-family */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-    </style>
 </head>
 <body>
-    <div id="root">
+    <div class="container">
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+        
         <header>
             <h1>Morgan White Group | AI Assistant</h1>
-            <button id="toggle-dark-mode" aria-label="Toggle dark mode" class="theme-toggle">
+            <button id="toggle-dark-mode" aria-label="Toggle dark mode">
                 <span>Dark Mode</span>
             </button>
         </header>
 
-        <div class="fixed-logo">
-            <img src="images/logo.png" alt="Morgan White Group Logo">
-        </div>
+        <img src="images/logo.png" alt="Morgan White Group Logo">
 
-        <main>
+        <main id="main-content">
             <div id="chat-container" role="log" aria-live="polite">
                 <ul id="dialogue">
                     <li class="bot-message">
@@ -49,36 +43,25 @@
                         rows="1"
                         aria-label="Message input"
                     ></textarea>
-                    <div class="loading-dots" aria-hidden="true">
+                    <div class="typing-dots" aria-hidden="true">
                         <span></span>
                         <span></span>
                         <span></span>
                     </div>
-                    <button type="submit" aria-label="Send message">
-                        Send
-                    </button>
                 </div>
                 <div class="error-message" role="alert"></div>
             </form>
 
-            <div class="links-container">
-                <a href="https://morganwhite.com" target="_blank" rel="noopener noreferrer" class="link-button">
-                    Homepage
-                </a>
-                <a href="https://insuranceforeveryone.com" target="_blank" rel="noopener noreferrer" class="link-button">
-                    Insurance For Everyone
-                </a>
-                <a href="https://www.linkedin.com/company/morgan-white-group" target="_blank" rel="noopener noreferrer" class="link-button">
-                    LinkedIn
-                </a>
-                <a href="https://morganwhite.com/security" target="_blank" rel="noopener noreferrer" class="link-button">
-                    Security
-                </a>
-            </div>
+            <nav aria-label="External links">
+                <a href="https://morganwhite.com" target="_blank" rel="noopener noreferrer">Homepage</a>
+                <a href="https://insuranceforeveryone.com" target="_blank" rel="noopener noreferrer">Insurance For Everyone</a>
+                <a href="https://www.linkedin.com/company/morgan-white-group" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+                <a href="https://morganwhite.com/security" target="_blank" rel="noopener noreferrer">Security</a>
+            </nav>
         </main>
 
         <footer>
-            <p class="disclaimer">This chat interface utilizes artificial intelligence technology. While we strive for accuracy, the AI may occasionally provide incorrect, incomplete, or outdated information. The information provided should not be considered as professional advice. Please verify any critical information through official Morgan White Group channels. Morgan White Group disclaims all liability for any actions taken based on AI-generated responses. <a href="https://morganwhite.com/privacy" target="_blank" rel="noopener noreferrer" class="privacy-link">Privacy Policy</a></p>
+            <p>This chat interface utilizes artificial intelligence technology. While we strive for accuracy, the AI may occasionally provide incorrect, incomplete, or outdated information. The information provided should not be considered as professional advice. Please verify any critical information through official Morgan White Group channels. Morgan White Group disclaims all liability for any actions taken based on AI-generated responses. <a href="https://morganwhite.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></p>
         </footer>
     </div>
     <script src="app/index.js" type="module"></script>

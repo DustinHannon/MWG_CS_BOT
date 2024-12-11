@@ -64,21 +64,6 @@ class App {
         const errorContainer = document.createElement('div');
         errorContainer.className = 'error-container';
         errorContainer.setAttribute('role', 'alert');
-        errorContainer.style.cssText = `
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #fee2e2;
-            color: #991b1b;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            z-index: 9999;
-            text-align: center;
-            max-width: 90%;
-        `;
-        
         errorContainer.textContent = message;
         document.body.appendChild(errorContainer);
         
