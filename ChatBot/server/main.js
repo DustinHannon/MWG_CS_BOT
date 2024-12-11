@@ -5,6 +5,8 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import compression from 'compression';
 import session from 'express-session';
+import { createClient } from 'redis';
+import RedisStore from 'connect-redis';
 import cors from 'cors';
 import openaiService from './services/openaiService.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -15,6 +17,31 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Initialize Redis client
+let redisClient;
+try {
+    redisClient = createClient({
+        url: config.redis.url,
+        password: config.redis.password,
+        socket: {
+            tls: config.redis.tls
+        }
+    });
+
+    await redisClient.connect();
+    
+    redisClient.on('error', (err) => {
+        console.error('Redis Client Error:', err);
+    });
+
+    redisClient.on('connect', () => {
+        console.log('Connected to Redis successfully');
+    });
+} catch (err) {
+    console.error('Failed to create Redis client:', err);
+    // Continue without Redis - will fall back to MemoryStore with warning
+}
 
 // Security middleware
 app.use(helmet({
@@ -30,6 +57,7 @@ app.use(cors(config.cors));
 
 // Session configuration
 app.use(session({
+    store: redisClient ? new RedisStore({ client: redisClient }) : undefined,
     secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
     saveUninitialized: true,
@@ -64,7 +92,8 @@ app.get('/health', (req, res) => {
     res.status(200).json({ 
         status: 'healthy',
         port: config.port,
-        env: config.nodeEnv
+        env: config.nodeEnv,
+        redisConnected: !!redisClient?.isReady
     });
 });
 
@@ -132,6 +161,15 @@ app.get('*', (req, res) => {
 // Error handling middleware
 app.use(errorHandler);
 
+// Cleanup function for Redis connection
+const cleanup = async () => {
+    if (redisClient?.isReady) {
+        await redisClient.quit();
+        console.log('Redis connection closed');
+    }
+    process.exit(0);
+};
+
 // Start server
 app.listen(config.port, () => {
     console.log(`Server is running on port ${config.port}`);
@@ -141,14 +179,18 @@ app.listen(config.port, () => {
     process.exit(1);
 });
 
+// Handle cleanup
+process.on('SIGTERM', cleanup);
+process.on('SIGINT', cleanup);
+
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
-    process.exit(1);
+    cleanup().then(() => process.exit(1));
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    process.exit(1);
+    cleanup().then(() => process.exit(1));
 });

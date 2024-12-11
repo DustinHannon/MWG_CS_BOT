@@ -12,6 +12,13 @@ const config = {
     // API Keys
     openaiApiKey: process.env.OPENAI_API_KEY,
     
+    // Redis configuration
+    redis: {
+        url: process.env.REDIS_URL || process.env.AZURE_REDIS_CONNECTION_STRING,
+        password: process.env.REDIS_PASSWORD,
+        tls: process.env.NODE_ENV === 'production'
+    },
+    
     // Security settings
     cors: {
         origin: '*', // Allow all origins since we're using Azure Web Apps

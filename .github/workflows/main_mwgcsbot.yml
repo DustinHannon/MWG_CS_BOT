@@ -99,5 +99,15 @@ jobs:
                 "name": "PRODUCTION_DOMAIN",
                 "value": "https://mwgcsbot-apdcavd6ameddtdb.southcentralus-01.azurewebsites.net/",
                 "slotSetting": false
+              },
+              {
+                "name": "AZURE_REDIS_CONNECTION_STRING",
+                "value": "${{ secrets.AZURE_REDIS_CONNECTION_STRING }}",
+                "slotSetting": false
+              },
+              {
+                "name": "SESSION_SECRET",
+                "value": "${{ secrets.SESSION_SECRET }}",
+                "slotSetting": false
               }
             ]
