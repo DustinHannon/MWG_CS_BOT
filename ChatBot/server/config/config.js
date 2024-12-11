@@ -6,17 +6,15 @@ dotenv.config();
 // Validate and export environment variables
 const config = {
     // Server configuration
-    port: process.env.WEBSITE_HOSTNAME ? 8080 : (process.env.PORT || 3000),
-    nodeEnv: process.env.NODE_ENV || 'development',
+    port: process.env.PORT || 8080, // Default to 8080 for Azure compatibility
+    nodeEnv: process.env.NODE_ENV || 'production',
     
     // API Keys
     openaiApiKey: process.env.OPENAI_API_KEY,
     
     // Security settings
     cors: {
-        origin: process.env.NODE_ENV === 'production' 
-            ? '*' // Allow all origins in production since we're using Azure Web Apps
-            : 'http://localhost:3000',
+        origin: '*', // Allow all origins since we're using Azure Web Apps
         methods: ['GET', 'POST'],
         allowedHeaders: ['Content-Type']
     },
@@ -49,12 +47,6 @@ const config = {
     openai: {
         model: 'gpt-3.5-turbo',
         maxTokens: 600
-    },
-    
-    // Logging configuration
-    logging: {
-        level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-        format: process.env.NODE_ENV === 'production' ? 'json' : 'dev'
     }
 };
 
