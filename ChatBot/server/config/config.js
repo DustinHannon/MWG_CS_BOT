@@ -3,6 +3,34 @@ import * as dotenv from 'dotenv';
 // Load environment variables from .env file
 dotenv.config();
 
+// Helper function to parse Redis connection string
+const parseRedisConfig = () => {
+    const connectionString = process.env.REDIS_URL || process.env.AZURE_REDIS_CONNECTION_STRING;
+    if (!connectionString) return null;
+
+    // If it's already a proper Redis URL, return it
+    if (connectionString.startsWith('redis://') || connectionString.startsWith('rediss://')) {
+        return connectionString;
+    }
+
+    // For Azure Redis connection strings, they typically look like:
+    // hostname:port,password=password,ssl=True,abortConnect=False
+    try {
+        const parts = connectionString.split(',');
+        const hostPort = parts[0];
+        const password = parts.find(p => p.startsWith('password='))?.split('=')[1];
+        const ssl = parts.find(p => p.startsWith('ssl='))?.split('=')[1] === 'True';
+
+        if (password) {
+            return `redis${ssl ? 's' : ''}://:${password}@${hostPort}`;
+        }
+        return `redis${ssl ? 's' : ''}://${hostPort}`;
+    } catch (err) {
+        console.error('Error parsing Redis connection string:', err);
+        return null;
+    }
+};
+
 // Validate and export environment variables
 const config = {
     // Server configuration
@@ -14,8 +42,7 @@ const config = {
     
     // Redis configuration
     redis: {
-        url: process.env.REDIS_URL || process.env.AZURE_REDIS_CONNECTION_STRING,
-        password: process.env.REDIS_PASSWORD,
+        url: parseRedisConfig(),
         tls: process.env.NODE_ENV === 'production'
     },
     
