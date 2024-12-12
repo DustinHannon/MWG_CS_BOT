@@ -3,8 +3,8 @@ import * as dotenv from 'dotenv';
 // Load environment variables from .env file
 dotenv.config();
 
-// Helper function to parse Azure Redis connection string
-const parseAzureRedisConfig = () => {
+// Helper function to parse Redis connection string
+const parseRedisConfig = () => {
     const connectionString = process.env.AZURE_REDIS_CONNECTION_STRING;
     if (!connectionString) {
         console.error('AZURE_REDIS_CONNECTION_STRING environment variable is not set');
@@ -12,9 +12,15 @@ const parseAzureRedisConfig = () => {
     }
 
     try {
+        // Check if the connection string is already in URL format
+        if (connectionString.startsWith('rediss://')) {
+            console.log('Using Redis URL format connection string');
+            return connectionString;
+        }
+
         // Log the format of the connection string (without exposing sensitive data)
         const maskedConnectionString = connectionString.replace(/password=([^,]+)/, 'password=***');
-        console.log('Parsing Redis connection string format:', maskedConnectionString);
+        console.log('Parsing Azure Redis connection string format:', maskedConnectionString);
 
         // Azure Redis connection string format:
         // hostname:port,password=password,ssl=True,abortConnect=False
@@ -25,69 +31,36 @@ const parseAzureRedisConfig = () => {
             throw new Error('Invalid host:port format in Redis connection string');
         }
 
-        // Validate host:port parts
+        // Extract host and port
         const [host, port] = hostPort.split(':');
         if (!host || !port) {
             throw new Error('Missing host or port in Redis connection string');
         }
-        if (isNaN(port) || port < 1 || port > 65535) {
-            throw new Error('Invalid port number in Redis connection string');
-        }
 
-        // Convert settings to a map for easier validation
+        // Convert settings to a map
         const settingsMap = settings.reduce((acc, setting) => {
             const [key, value] = setting.split('=').map(s => s.trim().toLowerCase());
             acc[key] = value;
             return acc;
         }, {});
 
-        // Validate required settings
-        const requiredSettings = ['password', 'ssl'];
-        const missingSettings = requiredSettings.filter(setting => !settingsMap[setting]);
-        if (missingSettings.length > 0) {
-            throw new Error(`Missing required settings: ${missingSettings.join(', ')}`);
-        }
-
-        // Extract and validate password
+        // Extract password
         const password = settingsMap.password;
         if (!password) {
-            throw new Error('Empty password in Redis connection string');
+            throw new Error('Missing password in Redis connection string');
         }
 
-        // Validate SSL setting
-        if (settingsMap.ssl !== 'true') {
-            throw new Error('SSL must be enabled for Azure Redis (ssl=True)');
-        }
-
-        // Construct Redis URL with SSL
-        // Note: Azure Redis requires SSL, so we use rediss:// protocol
+        // Construct Redis URL (always use SSL for Azure Redis)
         const redisUrl = `rediss://:${encodeURIComponent(password)}@${host}:${port}`;
         
-        // Validate final URL format
-        try {
-            const url = new URL(redisUrl);
-            // Additional URL validation
-            if (!url.password) {
-                throw new Error('Password not properly encoded in Redis URL');
-            }
-            if (!url.hostname || !url.port) {
-                throw new Error('Missing hostname or port in Redis URL');
-            }
-        } catch (err) {
-            throw new Error(`Invalid Redis URL format: ${err.message}`);
-        }
-
         console.log('Successfully parsed Redis connection string');
         console.log('Host:', host);
         console.log('Port:', port);
-        console.log('SSL Enabled:', settingsMap.ssl === 'true');
+        console.log('SSL Enabled: true');
         
         return redisUrl;
     } catch (err) {
         console.error('Error parsing Redis connection string:', err.message);
-        console.error('Connection string must follow format:');
-        console.error('hostname:port,password=password,ssl=True,abortConnect=False');
-        console.error('Example: myredis.redis.cache.windows.net:6380,password=mypassword,ssl=True,abortConnect=False');
         return null;
     }
 };
@@ -95,7 +68,7 @@ const parseAzureRedisConfig = () => {
 // Validate and export environment variables
 const config = {
     // Server configuration
-    port: process.env.PORT || 8080, // Default to 8080 for Azure compatibility
+    port: process.env.PORT || 8080,
     nodeEnv: process.env.NODE_ENV || 'production',
     
     // API Keys
@@ -103,21 +76,30 @@ const config = {
     
     // Redis configuration
     redis: {
-        url: parseAzureRedisConfig(),
-        tls: true // Always true for Azure Redis
+        url: parseRedisConfig(),
+        tls: true, // Always true for Azure Redis
+        socket: {
+            connectTimeout: 60000, // 60 seconds
+            keepAlive: 5000, // 5 seconds
+            family: 4, // Force IPv4
+            reconnectStrategy: (retries) => {
+                if (retries > 50) return new Error('Max reconnection attempts reached');
+                return Math.min(Math.pow(2, retries) * 100, 10000);
+            }
+        }
     },
     
     // Security settings
     cors: {
-        origin: '*', // Allow all origins since we're using Azure Web Apps
+        origin: '*',
         methods: ['GET', 'POST'],
         allowedHeaders: ['Content-Type']
     },
     
     // Rate limiting
     rateLimit: {
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 100 // limit each IP to 100 requests per windowMs
+        windowMs: 15 * 60 * 1000,
+        max: 100
     },
     
     // Content Security Policy
