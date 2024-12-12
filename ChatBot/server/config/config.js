@@ -77,7 +77,19 @@ const config = {
     // Redis configuration
     redis: {
         url: parseRedisConfig(),
-        tls: true, // Always true for Azure Redis
+        tls: {
+            // Force TLS 1.2 which is supported by Azure Redis Cache
+            minVersion: 'TLSv1.2',
+            maxVersion: 'TLSv1.2',
+            // Common ciphers supported by Azure Redis Cache
+            ciphers: [
+                'ECDHE-RSA-AES256-GCM-SHA384',
+                'ECDHE-RSA-AES128-GCM-SHA256',
+                'DHE-RSA-AES256-GCM-SHA384',
+                'DHE-RSA-AES128-GCM-SHA256'
+            ].join(':'),
+            rejectUnauthorized: false // Required for Azure Redis SSL
+        },
         socket: {
             connectTimeout: 60000, // 60 seconds
             keepAlive: 5000, // 5 seconds
@@ -145,6 +157,8 @@ const validateConfig = () => {
             console.log('Host:', url.hostname);
             console.log('Port:', url.port);
             console.log('SSL Enabled:', url.protocol === 'rediss:');
+            console.log('TLS Version:', config.redis.tls.minVersion);
+            console.log('Using ciphers:', config.redis.tls.ciphers);
         } catch (err) {
             throw new Error(`Invalid Redis URL format: ${err.message}`);
         }
