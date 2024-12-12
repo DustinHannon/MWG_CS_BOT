@@ -25,48 +25,19 @@ try {
         redisClient = createClient({
             url: config.redis.url,
             socket: {
-                tls: true,
-                rejectUnauthorized: false, // Required for Azure Redis SSL
-                keepAlive: 5000, // Reduced keepalive interval for more frequent checks
-                connectTimeout: 30000, // Increased connection timeout
-                reconnectStrategy: (retries) => {
-                    if (retries > 50) {
-                        console.error('Max Redis reconnection attempts reached');
-                        return new Error('Max reconnection attempts reached');
-                    }
-                    // Exponential backoff with max delay of 10 seconds
-                    return Math.min(Math.pow(2, retries) * 100, 10000);
-                }
-            },
-            // Improved retry configuration
-            retryStrategy: function(options) {
-                if (options.error) {
-                    console.error('Redis retry error:', options.error);
-                    if (options.error.code === 'ECONNREFUSED') {
-                        return new Error('Redis server refused connection');
-                    }
-                    if (options.error.code === 'ENOTFOUND') {
-                        return new Error('Redis host not found');
-                    }
-                }
-                
-                // Try to reconnect for up to 1 hour
-                if (options.total_retry_time > 1000 * 60 * 60) {
-                    return new Error('Retry time exhausted');
-                }
-                
-                // Exponential backoff
-                const delay = Math.min(options.attempt * 1000, 30000);
-                console.log(`Retrying Redis connection in ${delay}ms...`);
-                return delay;
+                ...config.redis.socket,
+                tls: config.redis.tls,
+                rejectUnauthorized: false // Required for Azure Redis SSL
             }
         });
 
         // Enhanced Redis event handling
         redisClient.on('error', (err) => {
             console.error('Redis Client Error:', err);
-            console.error('Redis Connection String Format:', 
-                config.redis.url.replace(/\/\/.*@/, '//***:***@')); // Log redacted connection string
+            // Log redacted connection string for debugging
+            const redactedUrl = config.redis.url.replace(/\/\/(.*?)@/, '//***:***@');
+            console.error('Redis Connection String Format:', redactedUrl);
+            console.error('Error Stack:', err.stack);
         });
 
         redisClient.on('connect', () => {
@@ -113,8 +84,9 @@ app.use(helmet({
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
             frameSrc: ["'none'"],
+            formAction: ["'self'"],
             baseUri: ["'self'"],
-            formAction: ["'self'"]
+            upgradeInsecureRequests: []
         }
     },
     crossOriginEmbedderPolicy: false,
