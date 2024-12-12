@@ -24,24 +24,26 @@ try {
     if (config.redis.url) {
         redisClient = createClient({
             url: config.redis.url,
-            socket: {
-                ...config.redis.socket,
-                tls: config.redis.tls,
-                rejectUnauthorized: false // Required for Azure Redis SSL
-            }
+            socket: config.redis.socket,
+            tls: config.redis.tls // Use explicit TLS settings from config
         });
 
         // Enhanced Redis event handling
         redisClient.on('error', (err) => {
             console.error('Redis Client Error:', err);
-            // Log redacted connection string for debugging
+            // Log redacted connection string and TLS details for debugging
             const redactedUrl = config.redis.url.replace(/\/\/(.*?)@/, '//***:***@');
-            console.error('Redis Connection String Format:', redactedUrl);
-            console.error('Error Stack:', err.stack);
+            console.error('Redis Connection Details:');
+            console.error('- URL Format:', redactedUrl);
+            console.error('- TLS Version:', config.redis.tls.minVersion);
+            console.error('- Error Name:', err.name);
+            console.error('- Error Message:', err.message);
+            console.error('- Error Stack:', err.stack);
         });
 
         redisClient.on('connect', () => {
             console.log('Connected to Redis successfully');
+            console.log('TLS Version:', config.redis.tls.minVersion);
         });
 
         redisClient.on('reconnecting', (params) => {
