@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import session from 'express-session';
 import cors from 'cors';
+import crypto from 'crypto';
 import openaiService from './services/openaiService.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { securityMiddleware, validateInput } from './middleware/security.js';
@@ -41,13 +42,18 @@ app.use(helmet({
 // CORS configuration
 app.use(cors(config.cors));
 
+// Generate a secure random session secret in production
+const sessionSecret = config.nodeEnv === 'production' 
+    ? crypto.randomBytes(32).toString('hex')
+    : 'dev-secret-key';
+
 // Session configuration with in-memory store
 app.use(session({
-    secret: 'your-secret-key', // Default secret for development
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: true,
     cookie: {
-        secure: true,
+        secure: config.nodeEnv === 'production', // Only use secure cookies in production
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
