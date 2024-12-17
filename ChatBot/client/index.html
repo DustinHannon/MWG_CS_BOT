@@ -58,6 +58,9 @@
                 <a href="https://www.linkedin.com/company/morgan-white-group" target="_blank" rel="noopener noreferrer" class="link-button">
                     LinkedIn
                 </a>
+                <a href="https://morganwhite.com/security" target="_blank" rel="noopener noreferrer" class="link-button">
+                    Security
+                </a>
             </div>
         </main>
 
@@ -65,6 +68,27 @@
             <p class="disclaimer">This chat interface utilizes artificial intelligence technology. While we strive for accuracy, the AI may occasionally provide incorrect, incomplete, or outdated information. The information provided should not be considered as professional advice. Please verify any critical information through official Morgan White Group channels. Morgan White Group disclaims all liability for any actions taken based on AI-generated responses.</p>
         </footer>
     </div>
+
+    <script>
+        // Initialize dark mode
+        const darkModeToggle = document.getElementById('toggle-dark-mode');
+        const body = document.body;
+        const root = document.documentElement;
+
+        // Check for saved dark mode preference
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            body.classList.add('dark-mode');
+            darkModeToggle.querySelector('span').textContent = 'Light Mode';
+        }
+
+        // Dark mode toggle functionality
+        darkModeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isDarkMode = body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
+            darkModeToggle.querySelector('span').textContent = isDarkMode ? 'Light Mode' : 'Dark Mode';
+        });
+    </script>
     <script src="app/index.js" type="module"></script>
 </body>
 </html>
