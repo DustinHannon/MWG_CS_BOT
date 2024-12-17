@@ -1,6 +1,7 @@
 // Support both ESM and CommonJS
 const fetchModule = import('node-fetch').then(m => m.default);
 const configModule = import('../config/config.js').then(m => m.default);
+const { enrichUserPromptWithContext } = await import('../utils.js');
 const { createHash } = await import('crypto');
 
 class OpenAIService {
@@ -62,6 +63,9 @@ class OpenAIService {
             this.checkRateLimit(sessionId);
             this.updateRateLimit(sessionId);
 
+            // Enrich the prompt with context
+            const enrichedPrompt = enrichUserPromptWithContext(prompt);
+
             const response = await this.fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -70,7 +74,7 @@ class OpenAIService {
                 },
                 body: JSON.stringify({
                     model: this.model,
-                    messages: [{ role: 'user', content: prompt }],
+                    messages: [{ role: 'user', content: enrichedPrompt }],
                     max_tokens: this.maxTokens,
                 }),
             });
