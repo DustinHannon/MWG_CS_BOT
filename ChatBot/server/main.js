@@ -61,20 +61,31 @@ const app = express();
 // Security middleware configuration
 // Helmet helps secure Express apps by setting various HTTP headers
 app.use(helmet({
+    // Content Security Policy
     contentSecurityPolicy: {
         directives: {
-            ...config.csp.directives,
-            // Additional security headers for enhanced protection
-            'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
-            'x-permitted-cross-domain-policies': 'none',
-            'x-content-type-options': 'nosniff',
-            'x-download-options': 'noopen',
-            'x-frame-options': 'DENY',
-            'x-xss-protection': '1; mode=block'
+            ...config.csp.directives
         }
     },
+    // Cross-Origin settings
     crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    // Force HTTPS
+    hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    },
+    // Prevent MIME type sniffing
+    noSniff: true,
+    // XSS Protection
+    xssFilter: true,
+    // Disable download prompts in old IE
+    ieNoOpen: true,
+    // Prevent clickjacking
+    frameguard: { action: 'deny' },
+    // Disable Adobe Flash and PDFs cross-domain
+    permittedCrossDomainPolicies: { permittedPolicies: 'none' }
 }));
 
 // CORS configuration for handling cross-origin requests
