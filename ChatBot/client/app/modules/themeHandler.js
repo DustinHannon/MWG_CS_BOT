@@ -1,6 +1,7 @@
 export class ThemeHandler {
     constructor() {
         this.darkModeToggle = document.getElementById('toggle-dark-mode');
+        this.body = document.body;
         this.setupThemeHandling();
     }
 
@@ -8,14 +9,14 @@ export class ThemeHandler {
         if (this.darkModeToggle) {
             // Check for saved dark mode preference
             if (localStorage.getItem('darkMode') === 'enabled') {
-                document.body.classList.add('dark-mode');
+                this.body.classList.add('dark-mode');
                 this.updateButtonText(true);
             }
-            
+
             // Add click event listener
             this.darkModeToggle.addEventListener('click', () => {
-                document.body.classList.toggle('dark-mode');
-                const isDarkMode = document.body.classList.contains('dark-mode');
+                this.body.classList.toggle('dark-mode');
+                const isDarkMode = this.body.classList.contains('dark-mode');
                 localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
                 this.updateButtonText(isDarkMode);
             });
