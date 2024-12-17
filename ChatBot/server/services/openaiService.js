@@ -21,12 +21,8 @@
  * - ../middleware/errorHandler.js: Error handling
  */
 
-// Dynamic imports for better module loading
-const fetchModule = import('node-fetch').then(m => m.default);
-const configModule = import('../config/config.js').then(m => m.default);
-const { enrichUserPromptWithContext } = await import('../utils.js');
-const { createHash } = await import('crypto');
 import { APIError } from '../middleware/errorHandler.js';
+import { createHash } from 'crypto';
 
 /**
  * OpenAI Service Class
@@ -39,11 +35,12 @@ class OpenAIService {
      * for tracking sessions, rate limits, and caching responses.
      */
     constructor() {
-        this.init();
         this.sessions = new Map();        // Store session data
         this.rateLimits = new Map();      // Track rate limits per session
         this.responseCache = new Map();    // Cache responses
         this.lastRequestTime = new Map();  // Track request timing
+        this.initialized = false;          // Track initialization state
+        this.initPromise = null;          // Store initialization promise
     }
 
     /**
@@ -51,14 +48,39 @@ class OpenAIService {
      * and setting up default values from configuration.
      */
     async init() {
-        const [fetch, config] = await Promise.all([fetchModule, configModule]);
-        this.fetch = fetch;
-        this.apiKey = config.openaiApiKey;
-        this.model = config.openai?.model || 'gpt-3.5-turbo';
-        this.maxTokens = config.openai?.maxTokens || 600;
-        this.temperature = config.openai?.temperature || 0.7;
-        this.cacheDuration = config.openai?.cacheDuration || 3600000; // 1 hour
-        this.requestDelay = config.openai?.requestDelay || 1000; // 1 second between requests
+        if (this.initialized) return;
+        if (this.initPromise) return this.initPromise;
+
+        this.initPromise = (async () => {
+            try {
+                // Dynamic imports
+                const [
+                    { default: fetch },
+                    { default: config },
+                    { enrichUserPromptWithContext }
+                ] = await Promise.all([
+                    import('node-fetch'),
+                    import('../config/config.js'),
+                    import('../utils.js')
+                ]);
+
+                this.fetch = fetch;
+                this.apiKey = config.openaiApiKey;
+                this.model = config.openai?.model || 'gpt-3.5-turbo';
+                this.maxTokens = config.openai?.maxTokens || 600;
+                this.temperature = config.openai?.temperature || 0.7;
+                this.cacheDuration = config.openai?.cacheDuration || 3600000; // 1 hour
+                this.requestDelay = config.openai?.requestDelay || 1000; // 1 second between requests
+                this.enrichUserPromptWithContext = enrichUserPromptWithContext;
+
+                this.initialized = true;
+            } catch (error) {
+                console.error('Failed to initialize OpenAI service:', error);
+                throw error;
+            }
+        })();
+
+        return this.initPromise;
     }
 
     /**
@@ -249,7 +271,7 @@ class OpenAIService {
             await this.enforceRequestDelay(sessionId);
 
             // Enrich the prompt with context
-            const enrichedPrompt = enrichUserPromptWithContext(prompt);
+            const enrichedPrompt = this.enrichUserPromptWithContext(prompt);
 
             // Make API request
             const response = await this.fetch('https://api.openai.com/v1/chat/completions', {
