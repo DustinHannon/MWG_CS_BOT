@@ -41,22 +41,20 @@ body {
   -webkit-font-smoothing: antialiased;
   height: 100vh;
   overflow: hidden;
-  background-image: url('https://morganwhite.com/wp-content/uploads/2022/12/mwg-bg-pattern.png');
-  background-repeat: repeat;
-  background-attachment: fixed;
-  background-blend-mode: overlay;
-}
-
-.dark-mode body {
-  background-blend-mode: soft-light;
+  background: url('https://morganwhite.com/common/img/bg.jpg') no-repeat center center fixed;
+  background-size: cover;
 }
 
 #root {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--primary-bg);
+  background-color: rgba(255, 255, 255, 0.95);
   transition: background-color 0.3s ease;
+}
+
+.dark-mode #root {
+  background-color: rgba(32, 33, 35, 0.95);
 }
 
 header {
