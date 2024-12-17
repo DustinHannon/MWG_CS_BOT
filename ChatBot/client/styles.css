@@ -41,12 +41,22 @@ body {
   -webkit-font-smoothing: antialiased;
   height: 100vh;
   overflow: hidden;
+  background-image: url('https://morganwhite.com/wp-content/uploads/2022/12/mwg-bg-pattern.png');
+  background-repeat: repeat;
+  background-attachment: fixed;
+  background-blend-mode: overlay;
+}
+
+.dark-mode body {
+  background-blend-mode: soft-light;
 }
 
 #root {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: var(--primary-bg);
+  transition: background-color 0.3s ease;
 }
 
 header {
@@ -65,6 +75,7 @@ header {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 1px 2px var(--shadow-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .fixed-logo {
@@ -74,6 +85,7 @@ header {
   z-index: 999;
   padding: 1rem 0;
   background-color: var(--primary-bg);
+  transition: background-color 0.3s ease;
 }
 
 .fixed-logo img {
@@ -88,6 +100,7 @@ header h1 {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color 0.3s ease;
 }
 
 #toggle-dark-mode {
@@ -141,16 +154,12 @@ main {
   width: 100%;
   border-radius: 1rem;
   transition: all 0.3s ease;
-}
-
-#dialogue li:nth-child(odd) {
   background-color: var(--chat-bot-bg);
   box-shadow: 0 2px 4px var(--shadow-color);
 }
 
 #dialogue li:nth-child(even) {
   background-color: var(--chat-user-bg);
-  box-shadow: 0 2px 4px var(--shadow-color);
 }
 
 .message-content {
@@ -180,6 +189,7 @@ main {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 -2px 10px var(--shadow-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .input-container {
@@ -209,6 +219,7 @@ main {
   max-height: 200px;
   outline: none;
   line-height: 1.5;
+  transition: color 0.3s ease;
 }
 
 #prompt-input::placeholder {
@@ -260,6 +271,7 @@ button[type="submit"]:disabled {
   flex-wrap: wrap;
   background-color: var(--primary-bg);
   border-top: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .link-button {
@@ -296,6 +308,7 @@ footer {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .disclaimer {
@@ -305,6 +318,7 @@ footer {
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 0 1rem;
+  transition: color 0.3s ease;
 }
 
 /* Responsive Design */
