@@ -77,6 +77,12 @@ jobs:
           slot-name: 'Production'
           package: .
 
+      - name: Run Cleanup Script
+        uses: azure/cli@v1
+        with:
+          inlineScript: |
+            az webapp ssh --resource-group MWGCSBot --name MWGCSBot --command "cd /home/site/wwwroot && powershell -ExecutionPolicy Bypass -File cleanup-azure.ps1"
+
       - name: Configure App Settings
         uses: azure/appservice-settings@v1
         with:
