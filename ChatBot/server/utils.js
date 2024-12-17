@@ -1,4 +1,51 @@
+/**
+ * Utility Functions (utils.js)
+ * 
+ * This file contains utility functions used throughout the Morgan White Group ChatBot application.
+ * Currently, it provides context enrichment for the chat interactions with OpenAI's API.
+ * 
+ * The main function enrichUserPromptWithContext adds company-specific context to each user
+ * prompt, ensuring the AI responses are accurate and relevant to Morgan White Group's
+ * services and policies.
+ * 
+ * Key features:
+ * - Comprehensive company information
+ * - Product details
+ * - Service descriptions
+ * - Contact information
+ * - Portal access details
+ * - Support procedures
+ * 
+ * Related files:
+ * - ../services/openaiService.js: Uses this context for API requests
+ */
+
+/**
+ * Enriches a user's prompt with Morgan White Group specific context
+ * 
+ * This function wraps the user's input with detailed company information,
+ * ensuring the AI response is:
+ * 1. Relevant to Morgan White Group's services
+ * 2. Accurate regarding company policies
+ * 3. Consistent with company procedures
+ * 4. Professional in tone
+ * 5. Compliant with company guidelines
+ * 
+ * The context includes:
+ * - Company overview and history
+ * - Division descriptions
+ * - Product details
+ * - Portal access information
+ * - Support contact details
+ * - Security compliance
+ * - Operating procedures
+ * 
+ * @param {string} prompt - The user's original question or prompt
+ * @returns {string} The enriched prompt with full company context
+ */
 export function enrichUserPromptWithContext(prompt) {
+    // The context template provides comprehensive information about
+    // Morgan White Group's services, policies, and procedures
     const context = `
     The following is a conversation with an AI customer support bot for Morgan White Group. The bot provides direct, factual responses strictly related to MWG's insurance services and policies.
 

@@ -1,29 +1,71 @@
+<!--
+/**
+ * Morgan White Group AI Assistant (index.html)
+ * 
+ * This is the main HTML file for the Morgan White Group ChatBot interface.
+ * It provides a responsive, accessible chat interface for users to interact
+ * with the AI assistant.
+ * 
+ * Key features:
+ * - Responsive design for all devices
+ * - Dark mode support
+ * - Accessibility compliance
+ * - Real-time chat interface
+ * - Company branding
+ * - Important links section
+ * - Legal disclaimer
+ * 
+ * Structure:
+ * - Header: Title and dark mode toggle
+ * - Main: Chat interface and links
+ * - Footer: Legal disclaimer
+ * 
+ * Related files:
+ * - styles.css: Main stylesheet
+ * - app/index.js: Main JavaScript entry point
+ * - images/: Logo and favicon
+ */
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Character encoding and viewport settings for responsive design -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Page title with company branding -->
     <title>Morgan White Group | AI Assistant</title>
+    
+    <!-- Favicon and stylesheet links -->
     <link rel="icon" type="image/png" href="images/favicon.ico">
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- Google Fonts for consistent typography -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Root container for the application -->
     <div id="root">
+        <!-- Header section with title and dark mode toggle -->
         <header>
             <h1>Morgan White Group Assistant</h1>
+            <!-- Dark mode toggle button with accessibility attributes -->
             <button id="toggle-dark-mode" aria-label="Toggle dark mode">
                 <span>Dark Mode</span>
             </button>
         </header>
 
+        <!-- Fixed company logo -->
         <div class="fixed-logo">
             <img src="images/logo.png" alt="Morgan White Group Logo">
         </div>
 
+        <!-- Main content area -->
         <main>
+            <!-- Chat container with accessibility attributes -->
             <div id="chat-container" role="log" aria-live="polite">
                 <ul id="dialogue">
+                    <!-- Initial welcome message -->
                     <li class="bot-message">
                         <div class="message-content">
                             <p>👋 Hello! I'm Morgan White Group's AI Assistant. I'm here to help you with insurance-related questions and support.</p>
@@ -33,8 +75,10 @@
                 </ul>
             </div>
 
+            <!-- Chat input form with accessibility labels -->
             <form id="prompt-form" aria-label="Chat input">
                 <div class="input-container">
+                    <!-- Auto-expanding textarea for user input -->
                     <textarea 
                         id="prompt-input"
                         name="prompt"
@@ -42,13 +86,16 @@
                         rows="1"
                         aria-label="Message input"
                     ></textarea>
+                    <!-- Submit button with accessibility label -->
                     <button type="submit" aria-label="Send message">
                         Send
                     </button>
                 </div>
             </form>
 
+            <!-- Important links section -->
             <div class="links-container">
+                <!-- Each link opens in a new tab with security attributes -->
                 <a href="https://morganwhite.com" target="_blank" rel="noopener noreferrer" class="link-button">
                     Homepage
                 </a>
@@ -64,10 +111,13 @@
             </div>
         </main>
 
+        <!-- Footer with legal disclaimer -->
         <footer>
             <p class="disclaimer">This chat interface utilizes artificial intelligence technology. While we strive for accuracy, the AI may occasionally provide incorrect, incomplete, or outdated information. The information provided should not be considered as professional advice. Please verify any critical information through official Morgan White Group channels. Morgan White Group disclaims all liability for any actions taken based on AI-generated responses.</p>
         </footer>
     </div>
+    
+    <!-- Main JavaScript module -->
     <script src="app/index.js" type="module"></script>
 </body>
 </html>
