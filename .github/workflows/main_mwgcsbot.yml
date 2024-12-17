@@ -33,6 +33,9 @@ jobs:
           npm install
           npm run build --if-present
 
+      - name: Copy cleanup script
+        run: cp cleanup-azure.ps1 ./
+
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
 
@@ -76,12 +79,7 @@ jobs:
           app-name: 'MWGCSBot'
           slot-name: 'Production'
           package: .
-
-      - name: Run Cleanup Script
-        uses: azure/cli@v1
-        with:
-          inlineScript: |
-            az webapp ssh --resource-group MWGCSBot --name MWGCSBot --command "cd /home/site/wwwroot && powershell -ExecutionPolicy Bypass -File cleanup-azure.ps1"
+          startup-command: 'powershell -ExecutionPolicy Bypass -File cleanup-azure.ps1 && npm start'
 
       - name: Configure App Settings
         uses: azure/appservice-settings@v1
@@ -104,16 +102,6 @@ jobs:
               {
                 "name": "PRODUCTION_DOMAIN",
                 "value": "https://mwgcsbot-apdcavd6ameddtdb.southcentralus-01.azurewebsites.net/",
-                "slotSetting": false
-              },
-              {
-                "name": "AZURE_REDIS_CONNECTION_STRING",
-                "value": "${{ secrets.AZURE_REDIS_CONNECTION_STRING }}",
-                "slotSetting": false
-              },
-              {
-                "name": "SESSION_SECRET",
-                "value": "${{ secrets.SESSION_SECRET }}",
                 "slotSetting": false
               }
             ]
