@@ -33,9 +33,6 @@ jobs:
           npm install
           npm run build --if-present
 
-      - name: Copy cleanup script
-        run: cp cleanup-azure.ps1 ./
-
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
 
