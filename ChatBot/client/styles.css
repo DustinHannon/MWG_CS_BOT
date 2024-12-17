@@ -1,37 +1,71 @@
+/**
+ * Main Stylesheet (styles.css)
+ * 
+ * This file contains all styles for the Morgan White Group ChatBot interface.
+ * It uses CSS custom properties (variables) for consistent theming and includes
+ * both light and dark mode support. The design is fully responsive and follows
+ * accessibility best practices.
+ * 
+ * Features:
+ * - Responsive design with mobile-first approach
+ * - Dark mode support
+ * - Custom scrollbar styling
+ * - Smooth animations and transitions
+ * - Accessible color contrast
+ * - Flexible layout system
+ * 
+ * Structure:
+ * 1. CSS Variables (Light/Dark themes)
+ * 2. Base Styles
+ * 3. Layout Components
+ * 4. UI Components
+ * 5. Responsive Design
+ * 6. Animations
+ * 7. Utility Classes
+ * 
+ * Related files:
+ * - index.html: Main HTML structure
+ * - modules/themeHandler.js: Dark mode functionality
+ */
+
+/* CSS Variables - Light Theme */
 :root {
-  --primary-bg: #ffffff;
-  --secondary-bg: #f7f7f8;
-  --primary-text: #2d3748;
-  --secondary-text: #4a5568;
-  --accent-color: #1B4B8F;
-  --border-color: #e2e8f0;
-  --chat-bot-bg: #f7f7f8;
-  --chat-user-bg: #ffffff;
-  --input-bg: #ffffff;
-  --shadow-color: rgba(0, 0, 0, 0.1);
-  --max-width: 48rem;
-  --header-height: 4rem;
-  --footer-height: 4.5rem;
+  --primary-bg: #ffffff;          /* Main background color */
+  --secondary-bg: #f7f7f8;       /* Secondary background color */
+  --primary-text: #2d3748;       /* Main text color */
+  --secondary-text: #4a5568;     /* Secondary text color */
+  --accent-color: #1B4B8F;       /* Brand accent color */
+  --border-color: #e2e8f0;       /* Border color */
+  --chat-bot-bg: #f7f7f8;        /* Bot message background */
+  --chat-user-bg: #ffffff;       /* User message background */
+  --input-bg: #ffffff;           /* Input field background */
+  --shadow-color: rgba(0, 0, 0, 0.1); /* Shadow color */
+  --max-width: 48rem;            /* Maximum content width */
+  --header-height: 4rem;         /* Header height */
+  --footer-height: 4.5rem;       /* Footer height */
 }
 
+/* Dark Theme Variables */
 .dark-mode {
-  --primary-bg: #202123;
-  --secondary-bg: #343541;
-  --primary-text: #ffffff;
-  --secondary-text: #ececf1;
-  --border-color: #4a4b53;
-  --chat-bot-bg: #444654;
-  --chat-user-bg: #343541;
-  --input-bg: #40414f;
-  --shadow-color: rgba(0, 0, 0, 0.3);
+  --primary-bg: #202123;         /* Dark mode main background */
+  --secondary-bg: #343541;       /* Dark mode secondary background */
+  --primary-text: #ffffff;       /* Dark mode main text */
+  --secondary-text: #ececf1;     /* Dark mode secondary text */
+  --border-color: #4a4b53;       /* Dark mode borders */
+  --chat-bot-bg: #444654;        /* Dark mode bot messages */
+  --chat-user-bg: #343541;       /* Dark mode user messages */
+  --input-bg: #40414f;           /* Dark mode input background */
+  --shadow-color: rgba(0, 0, 0, 0.3); /* Dark mode shadows */
 }
 
+/* Reset and Base Styles */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* Body Styles */
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--primary-bg);
@@ -45,6 +79,7 @@ body {
   background-size: cover;
 }
 
+/* Root Container */
 #root {
   height: 100vh;
   display: flex;
@@ -53,10 +88,12 @@ body {
   transition: background-color 0.3s ease;
 }
 
+/* Dark Mode Root Container */
 .dark-mode #root {
   background-color: rgba(32, 33, 35, 0.95);
 }
 
+/* Header Styles */
 header {
   position: fixed;
   top: 0;
@@ -76,6 +113,7 @@ header {
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
+/* Logo Container */
 .fixed-logo {
   position: fixed;
   top: var(--header-height);
@@ -86,11 +124,13 @@ header {
   transition: background-color 0.3s ease;
 }
 
+/* Logo Image */
 .fixed-logo img {
   height: 4rem;
   transition: all 0.2s ease;
 }
 
+/* Header Title */
 header h1 {
   font-size: 1.25rem;
   font-weight: 600;
@@ -101,6 +141,7 @@ header h1 {
   transition: color 0.3s ease;
 }
 
+/* Dark Mode Toggle Button */
 #toggle-dark-mode {
   background-color: var(--accent-color);
   color: white;
@@ -118,6 +159,7 @@ header h1 {
   transform: translateY(-1px);
 }
 
+/* Main Content Area */
 main {
   flex: 1;
   display: flex;
@@ -130,6 +172,7 @@ main {
   height: calc(100vh - var(--header-height) - var(--footer-height) - 6rem);
 }
 
+/* Chat Container */
 #chat-container {
   flex: 1;
   overflow-y: auto;
@@ -138,6 +181,7 @@ main {
   margin-bottom: calc(var(--footer-height) + 8rem);
 }
 
+/* Message List */
 #dialogue {
   display: flex;
   flex-direction: column;
@@ -145,6 +189,7 @@ main {
   list-style: none;
 }
 
+/* Message Items */
 #dialogue li {
   display: flex;
   padding: 1.5rem;
@@ -160,6 +205,7 @@ main {
   background-color: var(--chat-user-bg);
 }
 
+/* Message Content */
 .message-content {
   max-width: var(--max-width);
   margin: 0 auto;
@@ -174,6 +220,7 @@ main {
   margin-bottom: 0;
 }
 
+/* Input Form */
 #prompt-form {
   position: fixed;
   bottom: calc(var(--footer-height) + 5rem);
@@ -190,6 +237,7 @@ main {
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
+/* Input Container */
 .input-container {
   position: relative;
   display: flex;
@@ -206,6 +254,7 @@ main {
   box-shadow: 0 0 0 2px rgba(27, 75, 143, 0.2);
 }
 
+/* Text Input */
 #prompt-input {
   flex-grow: 1;
   background: transparent;
@@ -224,6 +273,7 @@ main {
   color: var(--secondary-text);
 }
 
+/* Submit Button */
 button[type="submit"] {
   background-color: var(--accent-color);
   color: white;
@@ -255,6 +305,7 @@ button[type="submit"]:disabled {
   transform: none;
 }
 
+/* Links Container */
 .links-container {
   position: fixed;
   bottom: var(--footer-height);
@@ -272,6 +323,7 @@ button[type="submit"]:disabled {
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
+/* Link Buttons */
 .link-button {
   display: inline-flex;
   align-items: center;
@@ -292,6 +344,7 @@ button[type="submit"]:disabled {
   transform: translateY(-1px);
 }
 
+/* Footer */
 footer {
   position: fixed;
   bottom: 0;
@@ -309,6 +362,7 @@ footer {
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
+/* Disclaimer Text */
 .disclaimer {
   font-size: 0.75rem;
   color: var(--secondary-text);
@@ -459,7 +513,7 @@ footer {
   animation: fadeIn 0.3s ease-out forwards;
 }
 
-/* Scrollbar Styling */
+/* Custom Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;
 }
