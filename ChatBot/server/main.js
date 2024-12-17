@@ -5,8 +5,6 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import compression from 'compression';
 import session from 'express-session';
-import { createClient } from 'redis';
-import RedisStore from 'connect-redis';
 import cors from 'cors';
 import openaiService from './services/openaiService.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -17,61 +15,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-
-// Initialize Redis client
-let redisClient;
-try {
-    if (config.redis.url) {
-        redisClient = createClient({
-            url: config.redis.url,
-            socket: config.redis.socket,
-            tls: config.redis.tls // Use explicit TLS settings from config
-        });
-
-        // Enhanced Redis event handling
-        redisClient.on('error', (err) => {
-            console.error('Redis Client Error:', err);
-            // Log redacted connection string and TLS details for debugging
-            const redactedUrl = config.redis.url.replace(/\/\/(.*?)@/, '//***:***@');
-            console.error('Redis Connection Details:');
-            console.error('- URL Format:', redactedUrl);
-            console.error('- TLS Version:', config.redis.tls.minVersion);
-            console.error('- Error Name:', err.name);
-            console.error('- Error Message:', err.message);
-            console.error('- Error Stack:', err.stack);
-        });
-
-        redisClient.on('connect', () => {
-            console.log('Connected to Redis successfully');
-            console.log('TLS Version:', config.redis.tls.minVersion);
-        });
-
-        redisClient.on('reconnecting', (params) => {
-            console.log('Reconnecting to Redis...', {
-                attempt: params?.attempt,
-                totalRetryTime: params?.totalRetryTime
-            });
-        });
-
-        redisClient.on('ready', () => {
-            console.log('Redis client is ready for operations');
-        });
-
-        await redisClient.connect();
-        
-        // Verify connection with a ping
-        const pingResult = await redisClient.ping();
-        console.log('Redis connection verified with PING:', pingResult);
-    }
-} catch (err) {
-    console.error('Failed to create Redis client:', err);
-    console.error('Error details:', {
-        name: err.name,
-        message: err.message,
-        stack: err.stack
-    });
-    redisClient = null;
-}
 
 // Security middleware
 app.use(helmet({
@@ -98,9 +41,9 @@ app.use(helmet({
 // CORS configuration
 app.use(cors(config.cors));
 
-// Session configuration
-const sessionConfig = {
-    secret: process.env.SESSION_SECRET || 'your-secret-key',
+// Session configuration with in-memory store
+app.use(session({
+    secret: 'your-secret-key', // Default secret for development
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -108,22 +51,7 @@ const sessionConfig = {
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
-};
-
-// Add Redis store if Redis client is connected
-if (redisClient?.isReady) {
-    const redisStore = new RedisStore({ 
-        client: redisClient,
-        prefix: 'mwgcsbot:',
-        ttl: 86400 // 1 day in seconds
-    });
-    sessionConfig.store = redisStore;
-    console.log('Using Redis session store');
-} else {
-    console.log('Using default MemoryStore for sessions');
-}
-
-app.use(session(sessionConfig));
+}));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -156,8 +84,7 @@ app.get('/health', (req, res) => {
         status: 'healthy',
         port: config.port,
         env: config.nodeEnv,
-        redisConnected: !!redisClient?.isReady,
-        sessionStore: redisClient?.isReady ? 'redis' : 'memory'
+        sessionStore: 'memory'
     });
 });
 
@@ -225,36 +152,24 @@ app.get('*', (req, res) => {
 // Error handling middleware
 app.use(errorHandler);
 
-// Cleanup function for Redis connection
-const cleanup = async () => {
-    if (redisClient?.isReady) {
-        await redisClient.quit();
-        console.log('Redis connection closed');
-    }
-    process.exit(0);
-};
-
 // Start server
 app.listen(config.port, () => {
     console.log(`Server is running on port ${config.port}`);
     console.log(`Environment: ${config.nodeEnv}`);
+    console.log('Using in-memory session store');
 }).on('error', (error) => {
     console.error('Server failed to start:', error);
     process.exit(1);
 });
 
-// Handle cleanup
-process.on('SIGTERM', cleanup);
-process.on('SIGINT', cleanup);
-
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
-    cleanup().then(() => process.exit(1));
+    process.exit(1);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    cleanup().then(() => process.exit(1));
+    process.exit(1);
 });
