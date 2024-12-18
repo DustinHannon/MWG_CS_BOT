@@ -90,14 +90,14 @@ body::before {
     bottom: 0;
     background: url('https://morganwhite.com/common/img/bg.jpg') no-repeat center center;
     background-size: cover;
-    opacity: 0.8; /* More visible in light mode */
+    opacity: 1.0; /* More visible in light mode */
     z-index: -1;
     transition: opacity 0.3s ease;
 }
 
 /* Dark Mode Background Adjustment */
 .dark-mode body::before {
-    opacity: 0.15; /* Adjusted for dark mode */
+    opacity: 0.4; /* Adjusted for dark mode */
 }
 
 /* Root Container */
