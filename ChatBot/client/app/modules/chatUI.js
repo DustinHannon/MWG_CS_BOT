@@ -284,7 +284,7 @@ export class ChatUI {
 
     /**
      * Process messages in the queue
-     * Ensures messages are added sequentially with animations
+     * Ensures messages are added sequentially without animations
      */
     async processMessageQueue() {
         if (!this.dialogue) {
@@ -300,11 +300,8 @@ export class ChatUI {
         const messageElement = this.messageQueue.shift();
 
         try {
-            // Add message to dialogue
+            // Add message to dialogue immediately without animation
             this.dialogue.appendChild(messageElement);
-
-            // Animate entrance
-            await this.animateMessage(messageElement);
 
             // Scroll into view
             this.scrollToBottom();
@@ -319,32 +316,12 @@ export class ChatUI {
     }
 
     /**
-     * Animate a message's entrance
-     * @param {HTMLElement} element - Element to animate
-     * @returns {Promise<void>} Animation completion promise
+     * No animation for immediate visibility
+     * @param {HTMLElement} element - Element to add
+     * @returns {Promise<void>}
      */
     async animateMessage(element) {
-        return new Promise(resolve => {
-            try {
-                element.style.opacity = '0';
-                element.style.transform = 'translateY(20px)';
-
-                // Trigger reflow
-                element.offsetHeight;
-
-                element.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-                element.style.opacity = '1';
-                element.style.transform = 'translateY(0)';
-
-                element.addEventListener('transitionend', () => {
-                    element.style.transition = '';
-                    resolve();
-                }, { once: true });
-            } catch (error) {
-                console.error('Animation failed:', error);
-                resolve(); // Resolve without animation on error
-            }
-        });
+        return Promise.resolve();
     }
 
     /**
