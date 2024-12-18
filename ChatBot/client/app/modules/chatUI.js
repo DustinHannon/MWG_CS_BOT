@@ -41,35 +41,6 @@ export class ChatUI {
         this.isProcessing = false;   // Flag for message processing
         this.typingTimeout = null;   // Timeout for typing indicator
         this.scrollTimeout = null;   // Timeout for scroll management
-        
-        // Initialize visibility observer
-        this.observeMessages();
-    }
-
-    /**
-     * Set up intersection observer for message visibility
-     * This enables animations when messages come into view
-     */
-    observeMessages() {
-        try {
-            this.observer = new IntersectionObserver(
-                (entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            entry.target.classList.add('visible');
-                        }
-                    });
-                },
-                {
-                    root: this.chatContainer,
-                    threshold: 0.1
-                }
-            );
-        } catch (error) {
-            console.error('Failed to initialize intersection observer:', error);
-            // Continue without animations if observer fails
-            this.observer = { observe: () => {} };
-        }
     }
 
     /**
@@ -330,9 +301,6 @@ export class ChatUI {
         try {
             // Add message to dialogue
             this.dialogue.appendChild(messageElement);
-            
-            // Observe for visibility
-            this.observer.observe(messageElement);
 
             // Animate entrance
             await this.animateMessage(messageElement);
