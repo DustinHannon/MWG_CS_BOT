@@ -19,21 +19,23 @@
  * - Content Security Policy
  * - Permissions Policy
  * 
+ * Note: Core security features like helmet, CORS, and rate limiting are configured
+ * in the main server file (main.js) for better centralization of server-level security.
+ * 
  * Related files:
  * - ../config/config.js: Security configuration settings
  * - ../middleware/errorHandler.js: Error handling for security violations
  */
 
 // Import required security-related modules
-import helmet from 'helmet';  // Comprehensive security middleware
-import cors from 'cors';      // Cross-Origin Resource Sharing
-import rateLimit from 'express-rate-limit';  // Rate limiting
-import config from '../config/config.js';    // Application configuration
 import { createHash } from 'crypto';         // Cryptographic functions
 
 /**
  * Enhanced security middleware that adds various security headers and protections.
  * This middleware runs on every request to ensure consistent security measures.
+ * 
+ * Note: Core security features (helmet, CORS, rate limiting) are configured in main.js.
+ * This middleware adds additional security headers and request tracking.
  * 
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
