@@ -24,11 +24,17 @@ export class ChatUI {
     /**
      * Initialize the chat UI
      * Sets up DOM references and initializes the message queue system
+     * @throws {Error} If required DOM elements are not found
      */
     constructor() {
-        // Core DOM elements
+        // Core DOM elements with validation
         this.dialogue = document.getElementById('dialogue');
         this.chatContainer = document.getElementById('chat-container');
+
+        // Validate required DOM elements
+        if (!this.dialogue || !this.chatContainer) {
+            throw new Error('Required chat UI elements not found. Please check the HTML structure.');
+        }
         
         // Message handling state
         this.messageQueue = [];      // Queue for pending messages
@@ -45,19 +51,25 @@ export class ChatUI {
      * This enables animations when messages come into view
      */
     observeMessages() {
-        this.observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                    }
-                });
-            },
-            {
-                root: this.chatContainer,
-                threshold: 0.1
-            }
-        );
+        try {
+            this.observer = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('visible');
+                        }
+                    });
+                },
+                {
+                    root: this.chatContainer,
+                    threshold: 0.1
+                }
+            );
+        } catch (error) {
+            console.error('Failed to initialize intersection observer:', error);
+            // Continue without animations if observer fails
+            this.observer = { observe: () => {} };
+        }
     }
 
     /**
@@ -65,8 +77,16 @@ export class ChatUI {
      * @param {string} question - The user's message text
      */
     async addUserMessage(question) {
-        const messageElement = this.createMessageElement('user-message', question);
-        await this.addMessageToDialogue(messageElement);
+        try {
+            if (!this.dialogue) {
+                throw new Error('Chat dialogue container not found');
+            }
+            const messageElement = this.createMessageElement('user-message', question);
+            await this.addMessageToDialogue(messageElement);
+        } catch (error) {
+            console.error('Failed to add user message:', error);
+            this.handleUIError(error);
+        }
     }
 
     /**
@@ -74,8 +94,16 @@ export class ChatUI {
      * @param {string} response - The bot's response text
      */
     async addBotResponse(response) {
-        const messageElement = this.createMessageElement('bot-message', response);
-        await this.addMessageToDialogue(messageElement);
+        try {
+            if (!this.dialogue) {
+                throw new Error('Chat dialogue container not found');
+            }
+            const messageElement = this.createMessageElement('bot-message', response);
+            await this.addMessageToDialogue(messageElement);
+        } catch (error) {
+            console.error('Failed to add bot response:', error);
+            this.handleUIError(error);
+        }
     }
 
     /**
@@ -83,9 +111,39 @@ export class ChatUI {
      * @param {string} errorMessage - The error message to display
      */
     async addErrorMessage(errorMessage) {
-        const messageElement = this.createMessageElement('bot-message error', errorMessage);
-        messageElement.setAttribute('role', 'alert');
-        await this.addMessageToDialogue(messageElement);
+        try {
+            if (!this.dialogue) {
+                throw new Error('Chat dialogue container not found');
+            }
+            const messageElement = this.createMessageElement('bot-message error', errorMessage);
+            messageElement.setAttribute('role', 'alert');
+            await this.addMessageToDialogue(messageElement);
+        } catch (error) {
+            console.error('Failed to add error message:', error);
+            // Fallback error display if chat UI fails
+            this.handleUIError(error);
+        }
+    }
+
+    /**
+     * Handle UI-related errors
+     * @param {Error} error - The error to handle
+     */
+    handleUIError(error) {
+        // Create a fallback error display
+        const errorContainer = document.createElement('div');
+        errorContainer.className = 'chat-error-fallback';
+        errorContainer.setAttribute('role', 'alert');
+        errorContainer.textContent = 'Chat interface error. Please refresh the page.';
+        
+        // Try to add to chat container, fallback to body
+        const container = this.chatContainer || document.body;
+        container.appendChild(errorContainer);
+
+        // Remove after 5 seconds
+        setTimeout(() => {
+            errorContainer.remove();
+        }, 5000);
     }
 
     /**
@@ -102,22 +160,28 @@ export class ChatUI {
         const messageContent = document.createElement('div');
         messageContent.className = 'message-content';
 
-        // Format message content with links and markdown
-        const formattedContent = this.formatMessageContent(content);
-        messageContent.innerHTML = formattedContent;
+        try {
+            // Format message content with links and markdown
+            const formattedContent = this.formatMessageContent(content);
+            messageContent.innerHTML = formattedContent;
 
-        // Add timestamp to message
-        const timestamp = document.createElement('div');
-        timestamp.className = 'message-timestamp';
-        timestamp.textContent = this.formatTimestamp(new Date());
-        
-        messageItem.appendChild(messageContent);
-        messageItem.appendChild(timestamp);
+            // Add timestamp to message
+            const timestamp = document.createElement('div');
+            timestamp.className = 'message-timestamp';
+            timestamp.textContent = this.formatTimestamp(new Date());
+            
+            messageItem.appendChild(messageContent);
+            messageItem.appendChild(timestamp);
 
-        // Add copy button for bot messages
-        if (className.includes('bot-message')) {
-            const copyButton = this.createCopyButton(formattedContent);
-            messageItem.appendChild(copyButton);
+            // Add copy button for bot messages
+            if (className.includes('bot-message')) {
+                const copyButton = this.createCopyButton(formattedContent);
+                messageItem.appendChild(copyButton);
+            }
+        } catch (error) {
+            console.error('Failed to create message element:', error);
+            messageContent.textContent = content; // Fallback to plain text
+            messageItem.appendChild(messageContent);
         }
 
         return messageItem;
@@ -129,34 +193,43 @@ export class ChatUI {
      * @returns {string} Formatted HTML content
      */
     formatMessageContent(content) {
+        if (!content || typeof content !== 'string') {
+            return 'Invalid message content';
+        }
+
         return content
             .split('\n')
             .map(line => {
-                // Convert URLs to clickable links
-                line = line.replace(
-                    /(https?:\/\/[^\s]+)/g,
-                    '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
-                );
+                try {
+                    // Convert URLs to clickable links
+                    line = line.replace(
+                        /(https?:\/\/[^\s]+)/g,
+                        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+                    );
 
-                // Format code blocks
-                line = line.replace(
-                    /`([^`]+)`/g,
-                    '<code>$1</code>'
-                );
+                    // Format code blocks
+                    line = line.replace(
+                        /`([^`]+)`/g,
+                        '<code>$1</code>'
+                    );
 
-                // Format bold text
-                line = line.replace(
-                    /\*\*([^*]+)\*\*/g,
-                    '<strong>$1</strong>'
-                );
+                    // Format bold text
+                    line = line.replace(
+                        /\*\*([^*]+)\*\*/g,
+                        '<strong>$1</strong>'
+                    );
 
-                // Format italic text
-                line = line.replace(
-                    /\*([^*]+)\*/g,
-                    '<em>$1</em>'
-                );
+                    // Format italic text
+                    line = line.replace(
+                        /\*([^*]+)\*/g,
+                        '<em>$1</em>'
+                    );
 
-                return line;
+                    return line;
+                } catch (error) {
+                    console.error('Failed to format line:', error);
+                    return line; // Return unformatted line on error
+                }
             })
             .join('<br>');
     }
@@ -207,11 +280,16 @@ export class ChatUI {
      * @returns {string} Formatted timestamp
      */
     formatTimestamp(date) {
-        return new Intl.DateTimeFormat('en-US', {
-            hour: 'numeric',
-            minute: 'numeric',
-            hour12: true
-        }).format(date);
+        try {
+            return new Intl.DateTimeFormat('en-US', {
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: true
+            }).format(date);
+        } catch (error) {
+            console.error('Failed to format timestamp:', error);
+            return ''; // Return empty string on error
+        }
     }
 
     /**
@@ -219,6 +297,10 @@ export class ChatUI {
      * @param {HTMLElement} messageElement - Message element to add
      */
     async addMessageToDialogue(messageElement) {
+        if (!this.dialogue) {
+            throw new Error('Chat dialogue container not found');
+        }
+
         // Add message to queue
         this.messageQueue.push(messageElement);
         
@@ -233,6 +315,10 @@ export class ChatUI {
      * Ensures messages are added sequentially with animations
      */
     async processMessageQueue() {
+        if (!this.dialogue) {
+            throw new Error('Chat dialogue container not found');
+        }
+
         if (this.messageQueue.length === 0) {
             this.isProcessing = false;
             return;
@@ -241,20 +327,26 @@ export class ChatUI {
         this.isProcessing = true;
         const messageElement = this.messageQueue.shift();
 
-        // Add message to dialogue
-        this.dialogue.appendChild(messageElement);
-        
-        // Observe for visibility
-        this.observer.observe(messageElement);
+        try {
+            // Add message to dialogue
+            this.dialogue.appendChild(messageElement);
+            
+            // Observe for visibility
+            this.observer.observe(messageElement);
 
-        // Animate entrance
-        await this.animateMessage(messageElement);
+            // Animate entrance
+            await this.animateMessage(messageElement);
 
-        // Scroll into view
-        this.scrollToBottom();
+            // Scroll into view
+            this.scrollToBottom();
 
-        // Process next message
-        await this.processMessageQueue();
+            // Process next message
+            await this.processMessageQueue();
+        } catch (error) {
+            console.error('Failed to process message:', error);
+            this.isProcessing = false;
+            this.handleUIError(error);
+        }
     }
 
     /**
@@ -264,20 +356,25 @@ export class ChatUI {
      */
     async animateMessage(element) {
         return new Promise(resolve => {
-            element.style.opacity = '0';
-            element.style.transform = 'translateY(20px)';
+            try {
+                element.style.opacity = '0';
+                element.style.transform = 'translateY(20px)';
 
-            // Trigger reflow
-            element.offsetHeight;
+                // Trigger reflow
+                element.offsetHeight;
 
-            element.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-            element.style.opacity = '1';
-            element.style.transform = 'translateY(0)';
+                element.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                element.style.opacity = '1';
+                element.style.transform = 'translateY(0)';
 
-            element.addEventListener('transitionend', () => {
-                element.style.transition = '';
-                resolve();
-            }, { once: true });
+                element.addEventListener('transitionend', () => {
+                    element.style.transition = '';
+                    resolve();
+                }, { once: true });
+            } catch (error) {
+                console.error('Animation failed:', error);
+                resolve(); // Resolve without animation on error
+            }
         });
     }
 
@@ -285,31 +382,37 @@ export class ChatUI {
      * Show typing indicator while bot is "typing"
      */
     showTypingIndicator() {
+        if (!this.dialogue) return;
+
         if (this.typingTimeout) {
             clearTimeout(this.typingTimeout);
         }
 
-        const typingIndicator = document.createElement('li');
-        typingIndicator.className = 'bot-message typing-indicator';
-        typingIndicator.id = 'typing-indicator';
-        typingIndicator.setAttribute('aria-label', 'Bot is typing');
-        
-        const dots = document.createElement('div');
-        dots.className = 'typing-dots';
-        for (let i = 0; i < 3; i++) {
-            const dot = document.createElement('span');
-            dot.setAttribute('aria-hidden', 'true');
-            dots.appendChild(dot);
-        }
-        
-        typingIndicator.appendChild(dots);
-        this.dialogue.appendChild(typingIndicator);
-        this.scrollToBottom();
+        try {
+            const typingIndicator = document.createElement('li');
+            typingIndicator.className = 'bot-message typing-indicator';
+            typingIndicator.id = 'typing-indicator';
+            typingIndicator.setAttribute('aria-label', 'Bot is typing');
+            
+            const dots = document.createElement('div');
+            dots.className = 'typing-dots';
+            for (let i = 0; i < 3; i++) {
+                const dot = document.createElement('span');
+                dot.setAttribute('aria-hidden', 'true');
+                dots.appendChild(dot);
+            }
+            
+            typingIndicator.appendChild(dots);
+            this.dialogue.appendChild(typingIndicator);
+            this.scrollToBottom();
 
-        // Remove typing indicator after 30 seconds (failsafe)
-        this.typingTimeout = setTimeout(() => {
-            this.removeTypingIndicator();
-        }, 30000);
+            // Remove typing indicator after 30 seconds (failsafe)
+            this.typingTimeout = setTimeout(() => {
+                this.removeTypingIndicator();
+            }, 30000);
+        } catch (error) {
+            console.error('Failed to show typing indicator:', error);
+        }
     }
 
     /**
@@ -321,9 +424,13 @@ export class ChatUI {
             this.typingTimeout = null;
         }
 
-        const typingIndicator = document.getElementById('typing-indicator');
-        if (typingIndicator) {
-            typingIndicator.remove();
+        try {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        } catch (error) {
+            console.error('Failed to remove typing indicator:', error);
         }
     }
 
@@ -331,12 +438,14 @@ export class ChatUI {
      * Scroll chat to bottom smoothly
      */
     scrollToBottom() {
+        if (!this.chatContainer) return;
+
         if (this.scrollTimeout) {
             clearTimeout(this.scrollTimeout);
         }
 
         this.scrollTimeout = setTimeout(() => {
-            if (this.chatContainer) {
+            try {
                 const scrollOptions = {
                     top: this.chatContainer.scrollHeight,
                     behavior: 'smooth'
@@ -349,6 +458,8 @@ export class ChatUI {
                     // Fallback for browsers that don't support smooth scrolling
                     this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
                 }
+            } catch (error) {
+                console.error('Failed to scroll:', error);
             }
         }, 100); // Small delay to ensure content is rendered
     }
@@ -357,11 +468,17 @@ export class ChatUI {
      * Clear all messages from the chat
      */
     clearMessages() {
-        while (this.dialogue.firstChild) {
-            this.dialogue.removeChild(this.dialogue.firstChild);
+        if (!this.dialogue) return;
+
+        try {
+            while (this.dialogue.firstChild) {
+                this.dialogue.removeChild(this.dialogue.firstChild);
+            }
+            this.messageQueue = [];
+            this.isProcessing = false;
+        } catch (error) {
+            console.error('Failed to clear messages:', error);
         }
-        this.messageQueue = [];
-        this.isProcessing = false;
     }
 
     /**
@@ -369,18 +486,25 @@ export class ChatUI {
      * @returns {Array<Object>} Array of message objects
      */
     getMessages() {
+        if (!this.dialogue) return [];
+
         const messages = [];
-        this.dialogue.querySelectorAll('li').forEach(li => {
-            const content = li.querySelector('.message-content')?.textContent || '';
-            const timestamp = li.querySelector('.message-timestamp')?.textContent || '';
-            const type = li.classList.contains('user-message') ? 'user' : 'bot';
-            
-            messages.push({
-                type,
-                content,
-                timestamp
+        try {
+            this.dialogue.querySelectorAll('li').forEach(li => {
+                const contentElement = li.querySelector('.message-content');
+                const timestampElement = li.querySelector('.message-timestamp');
+                
+                if (contentElement) {
+                    messages.push({
+                        type: li.classList.contains('user-message') ? 'user' : 'bot',
+                        content: contentElement.textContent || '',
+                        timestamp: timestampElement ? timestampElement.textContent : ''
+                    });
+                }
             });
-        });
+        } catch (error) {
+            console.error('Failed to get messages:', error);
+        }
         return messages;
     }
 }
