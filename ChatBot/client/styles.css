@@ -77,8 +77,27 @@ body {
     -webkit-font-smoothing: antialiased;
     height: 100vh;
     overflow: hidden;
-    background: url('https://morganwhite.com/common/img/bg.jpg') no-repeat center center fixed;
+    position: relative;
+}
+
+/* Background Image */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('https://morganwhite.com/common/img/bg.jpg') no-repeat center center;
     background-size: cover;
+    opacity: 0.3; /* More visible in light mode */
+    z-index: -1;
+    transition: opacity 0.3s ease;
+}
+
+/* Dark Mode Background Adjustment */
+.dark-mode body::before {
+    opacity: 0.15; /* Adjusted for dark mode */
 }
 
 /* Root Container */
@@ -86,13 +105,13 @@ body {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: rgba(255, 255, 255, 0.85); /* More transparent for better image visibility */
     transition: background-color 0.3s ease;
 }
 
 /* Dark Mode Root Container */
 .dark-mode #root {
-    background-color: rgba(32, 33, 35, 0.95);
+    background-color: rgba(32, 33, 35, 0.85); /* More transparent for better image visibility */
 }
 
 /* Header Styles */
