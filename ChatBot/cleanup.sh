@@ -12,9 +12,7 @@ remove_if_exists() {
 }
 
 echo "Removing known unused files..."
-# Remove old files that are no longer needed
-remove_if_exists "server/routes/chatRoutes.js"
-remove_if_exists "server/utils.js"
+# Remove only truly unused files that we know are not needed
 remove_if_exists "client/offline.html"
 remove_if_exists "cleanup-azure.ps1"
 
