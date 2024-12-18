@@ -59,6 +59,7 @@ export function enrichUserPromptWithContext(prompt) {
     - Core Services: Medical, dental, vision, Medicare, and retirement insurance solutions
     - Primary Phone: (877) 759-5762
     - Customer Service Hours: Monday-Thursday 8:00am-5:00pm, Friday 8:30am-2:30pm, Closed weekends
+    - Headquarters: Ridgeland, Mississippi, USA
 
     Company Divisions and Services:
     1. MWG Direct
@@ -75,10 +76,9 @@ export function enrichUserPromptWithContext(prompt) {
        - Specialized services for public/private groups
        - Innovative insurance products
        - Professional broker/agent support tools
-       - Located: 1675 Chester Avenue, Suite 100
        - Webite: https://mestmaker.com
 
-    3. MWG International (Miami, FL based)
+    3. MWG International
        - Serves Latin America and Caribbean markets
        - Third Party Administrator for international products
        - Specialized international insurance solutions
