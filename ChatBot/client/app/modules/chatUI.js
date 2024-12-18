@@ -252,10 +252,11 @@ export class ChatUI {
      */
     formatTimestamp(date) {
         try {
+            // Use 24-hour format for more compact display
             return new Intl.DateTimeFormat('en-US', {
-                hour: 'numeric',
-                minute: 'numeric',
-                hour12: true
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
             }).format(date);
         } catch (error) {
             console.error('Failed to format timestamp:', error);

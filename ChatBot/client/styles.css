@@ -194,6 +194,7 @@ main {
 /* Message Items */
 #dialogue li {
     display: flex;
+    flex-wrap: wrap;
     padding: 1.5rem;
     position: relative;
     width: 100%;
@@ -211,9 +212,11 @@ main {
 
 /* Message Content */
 .message-content {
-    max-width: var(--max-width);
-    margin: 0 auto;
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-right: 1rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .message-content p {
@@ -222,6 +225,38 @@ main {
 
 .message-content p:last-child {
     margin-bottom: 0;
+}
+
+/* Message Timestamp */
+.message-timestamp {
+    flex: 0 0 auto;
+    font-size: 0.75rem;
+    color: var(--secondary-text);
+    opacity: 0.8;
+    margin-left: auto;
+    align-self: flex-start;
+}
+
+/* Copy Button */
+.copy-button {
+    flex: 0 0 auto;
+    background: transparent;
+    border: none;
+    padding: 0.25rem;
+    margin-left: 0.5rem;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+}
+
+.copy-button:hover {
+    opacity: 1;
+}
+
+.copy-button svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: currentColor;
 }
 
 /* Input Form */
