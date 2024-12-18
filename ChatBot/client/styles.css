@@ -40,6 +40,7 @@
   --chat-user-bg: #ffffff;       /* User message background */
   --input-bg: #ffffff;           /* Input field background */
   --shadow-color: rgba(0, 0, 0, 0.1); /* Shadow color */
+  --error-color: #e53e3e;        /* Error message color */
   --max-width: 48rem;            /* Maximum content width */
   --header-height: 4rem;         /* Header height */
   --footer-height: 4.5rem;       /* Footer height */
@@ -56,6 +57,7 @@
   --chat-user-bg: #343541;       /* Dark mode user messages */
   --input-bg: #40414f;           /* Dark mode input background */
   --shadow-color: rgba(0, 0, 0, 0.3); /* Dark mode shadows */
+  --error-color: #fc8181;        /* Dark mode error color */
 }
 
 /* Reset and Base Styles */
@@ -252,6 +254,33 @@ main {
 .input-container:focus-within {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 2px rgba(27, 75, 143, 0.2);
+}
+
+/* Error State for Input Container */
+.input-container.invalid {
+  border-color: var(--error-color);
+  box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.2);
+}
+
+/* Error Message Container */
+.error-message {
+  color: var(--error-color);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background-color: rgba(229, 62, 62, 0.1);
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* Show Error Message when Form has Error */
+#prompt-form.error .error-message {
+  opacity: 1;
+  height: auto;
+  margin-bottom: 0.5rem;
 }
 
 /* Text Input */
