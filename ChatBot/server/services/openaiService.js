@@ -66,7 +66,7 @@ class OpenAIService {
 
                 this.fetch = fetch;
                 this.apiKey = config.openaiApiKey;
-                this.model = config.openai?.model || 'gpt-3.5-turbo';
+                this.model = config.openai?.model || 'o1';
                 this.maxTokens = config.openai?.maxTokens || 600;
                 this.temperature = config.openai?.temperature || 0.7;
                 this.cacheDuration = config.openai?.cacheDuration || 3600000; // 1 hour
