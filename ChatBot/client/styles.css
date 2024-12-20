@@ -134,20 +134,22 @@ header {
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Logo Container */
-.fixed-logo {
-    position: fixed;
-    top: var(--header-height);
-    left: 2rem;
-    z-index: 999;
-    padding: 1rem 0;
-    background-color: transparent;
-    transition: background-color 0.3s ease;
+/* Header Left Section */
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
-/* Logo Image */
-.fixed-logo img {
-    height: 8rem;
+/* Header Logo */
+.header-logo {
+    display: flex;
+    align-items: center;
+}
+
+.header-logo img {
+    height: calc(var(--header-height) - 1rem);
+    width: auto;
     transition: all 0.2s ease;
 }
 
@@ -467,12 +469,8 @@ footer {
         padding: 0 1rem;
     }
 
-    .fixed-logo {
-        left: 1rem;
-    }
-
-    .fixed-logo img {
-        height: 3.5rem;
+    .header-logo img {
+        height: calc(var(--header-height) - 1.5rem);
     }
 
     header h1 {
@@ -521,12 +519,8 @@ footer {
         padding: 0 0.75rem;
     }
 
-    .fixed-logo {
-        left: 0.75rem;
-    }
-
-    .fixed-logo img {
-        height: 3rem;
+    .header-logo img {
+        height: calc(var(--header-height) - 2rem);
     }
 
     header h1 {
