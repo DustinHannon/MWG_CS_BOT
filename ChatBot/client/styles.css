@@ -141,7 +141,7 @@ header {
     left: 2rem;
     z-index: 999;
     padding: 1rem 0;
-    background-color: var(--primary-bg);
+    background-color: transparent;
     transition: background-color 0.3s ease;
 }
 
