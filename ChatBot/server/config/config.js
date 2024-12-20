@@ -122,7 +122,7 @@ const config = {
     // OpenAI API configuration
     // Settings for the ChatGPT integration
     openai: {
-        model: 'gpt-3.5-turbo',        // GPT model to use
+        model: 'o1-2024-12-17',        // GPT model to use
         maxTokens: 600                  // Maximum tokens per response
     }
 };
