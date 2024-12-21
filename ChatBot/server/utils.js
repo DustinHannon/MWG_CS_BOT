@@ -235,7 +235,6 @@ export function enrichUserPromptWithContext(prompt) {
          * Exam coverage
          * Materials coverage
          * Discount programs
-         * LASIK benefits
 
     2. Family Plans:
        - Comprehensive solutions:
