@@ -2,22 +2,36 @@
  * Utility Functions (utils.js)
  * 
  * This file contains utility functions used throughout the Morgan White Group ChatBot application.
- * Currently, it provides context enrichment for the chat interactions with OpenAI's API.
+ * It specializes in context enrichment for chat interactions with OpenAI's API, ensuring
+ * responses are accurate, relevant, and aligned with Morgan White Group's services.
  * 
- * The main function enrichUserPromptWithContext adds company-specific context to each user
- * prompt, ensuring the AI responses are accurate and relevant to Morgan White Group's
- * services and policies.
+ * The context enrichment process:
+ * 1. Takes a user's raw question/prompt
+ * 2. Wraps it with comprehensive company information
+ * 3. Adds specific context about products, services, and procedures
+ * 4. Includes real-time support information and contact details
+ * 5. Enforces response guidelines and communication standards
  * 
  * Key features:
- * - Comprehensive company information
- * - Product details
- * - Service descriptions
- * - Contact information
- * - Portal access details
- * - Support procedures
+ * - Comprehensive company information and history
+ * - Detailed product and service descriptions
+ * - Current contact information and support hours
+ * - Portal access details and user guides
+ * - Support procedures and escalation paths
+ * - Security and compliance guidelines
+ * - Communication standards and restrictions
+ * 
+ * The enriched context ensures:
+ * - Accurate and consistent responses
+ * - Compliance with company policies
+ * - Professional communication standards
+ * - Proper handling of sensitive information
+ * - Appropriate escalation paths
  * 
  * Related files:
  * - ../services/openaiService.js: Uses this context for API requests
+ * - ../config/config.js: Configuration settings
+ * - ../middleware/security.js: Security guidelines
  */
 
 /**
@@ -312,7 +326,7 @@ export function enrichUserPromptWithContext(prompt) {
        * Fills coverage gaps after ACA plan benefits
        * No provider network restrictions
        * No waiting periods for covered services
-       * Pre-existing conditions covered (if covered by ACA plan)
+       * Pre-existing conditions covered (if covered by plan)
        * Coverage available in all 50 states
 
     - Coverage Details:
@@ -625,6 +639,7 @@ export function enrichUserPromptWithContext(prompt) {
     - Professional fees
     - Outpatient prescriptions
     For detailed benefits, log into https://my.mwadmin.com or call (888) 559-8414.
+    
 Customer: ${prompt}
 Bot:
 `
