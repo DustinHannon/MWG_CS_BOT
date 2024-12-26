@@ -6,6 +6,10 @@ Morgan White Group - Customer Service Chat Bot using OpenAI models
 
 MWG CS BOT is a customer service chatbot solution developed for Morgan White Group. It leverages OpenAI's language models to provide automated responses to customer inquiries through a web-based chat interface. The system uses a client-server architecture with a responsive web frontend and Node.js backend to deliver real-time chat capabilities.
 
+## Live Project
+
+The chatbot is accessible at [MWG CS BOT](https://mwgcsbot-apdcavd6ameddtdb.southcentralus-01.azurewebsites.net/)
+
 ## Core Features
 
 - Real-time chat interface with message history and theme support
