@@ -1,7 +1,7 @@
 # Architecture Documentation
 
 ## System Overview
-MWG CS BOT is a client-server application that provides AI-powered customer service chat functionality. The system uses OpenAI's language models to generate contextually relevant responses to customer inquiries.
+MWG CS BOT is a client-server application that provides AI-powered customer service chat functionality. The system uses OpenAI's language models to generate contextually relevant responses to customer inquiries, implementing security measures, caching mechanisms, and error handling.
 
 ## Architecture Diagram
 ```
@@ -9,185 +9,201 @@ MWG CS BOT is a client-server application that provides AI-powered customer serv
 │   Web Client    │────▶│  Web Server  │────▶│  OpenAI API │
 │  (JavaScript)   │◀────│   (Node.js)  │◀────│             │
 └─────────────────┘     └──────────────┘     └─────────────┘
-                              │
-                              │
-                        ┌──────────────┐
-                        │    Cache     │
-                        │   (Memory)   │
-                        └──────────────┘
+        │                      │
+        │                      │
+┌───────────────┐    ┌─────────────────┐
+│Service Worker │    │ Memory Storage  │
+│(Static Cache) │    │ - Sessions     │
+└───────────────┘    │ - Rate Limits  │
+                     │ - Response Cache│
+                     └─────────────────┘
 ```
 
 ## Components
 
 ### 1. Client-Side Components
 
+#### Main Application (index.js)
+- Initializes client-side modules
+- Handles module dependencies
+- Basic service worker registration
+- Basic global error handling
+- Basic online/offline status detection
+- Manages session initialization
+- Provides update notifications
+
 #### Chat UI Module (chatUI.js)
 - Manages message display and animations
-- Handles message formatting and rendering
-- Manages scroll behavior and lazy loading
-- Implements copy functionality
-- Provides accessibility features
+- Handles sequential message processing
+- Implements message history loading
+- Provides copy functionality
+- Basic ARIA attributes for error messages
+- Manages scroll behavior
+- Handles error display
+- Basic markdown and link formatting
 
 #### Form Handler Module (formHandler.js)
 - Manages form submissions and validation
-- Handles input sanitization
-- Implements retry logic with exponential backoff
-- Manages rate limiting on client side
-- Provides keyboard shortcuts
+- Basic client-side error handling
+- Basic retry logic with backoff
+- Performs input validation and sanitization
+- Handles keyboard shortcuts and paste events
+- Manages textarea auto-resizing
 
 #### Theme Handler Module (themeHandler.js)
-- Manages theme switching
-- Persists theme preferences
-- Handles system theme detection
+- Manages light/dark theme switching
+- Persists theme preference in localStorage
+- Syncs with system color scheme
+- Updates mobile browser theme color
+- Basic keyboard support for toggle
+- Basic error handling
 
 ### 2. Server-Side Components
 
+#### Main Server (main.js)
+- Express.js server configuration
+- Security middleware setup (helmet, CORS)
+- Session management
+- Rate limiting implementation
+- Static file serving
+- API endpoint definitions
+- Basic error handling
+- Basic health check endpoint
+
 #### OpenAI Service (openaiService.js)
 - Manages OpenAI API communication
-- Implements rate limiting and caching
-- Handles session management
-- Provides error handling and retries
-- Manages token usage tracking
+- Implements in-memory response caching
+- Handles dual-layer rate limiting (session & IP-based)
+- Manages session data and history
+- Basic error handling with retries
+- Implements request throttling
+- Tracks token usage
+- Performs automatic cache cleanup
 
 #### Security Middleware (security.js)
 - Implements security headers
 - Manages CORS policies
-- Provides input validation
-- Handles request sanitization
+- Basic input validation
+- Basic request sanitization
+- Implements session fingerprinting
 
 #### Error Handler (errorHandler.js)
 - Centralizes error handling
 - Standardizes error responses
-- Provides logging and monitoring
-- Manages error codes and messages
+- Provides error codes and messages
+- Basic console error logging
 
 ## Data Flow
 
 ### 1. Message Submission Flow
 ```
 1. User Input
-   └─▶ Form validation & sanitization (formHandler.js)
-       └─▶ Security middleware validation (security.js)
-           └─▶ Rate limit check (openaiService.js)
-               └─▶ Cache check (openaiService.js)
-                   └─▶ OpenAI API request
-                       └─▶ Response processing
-                           └─▶ Cache update
-                               └─▶ Client display (chatUI.js)
+   └─▶ Client-side validation (formHandler.js)
+       └─▶ Security middleware validation
+           └─▶ Session validation
+               └─▶ Rate limit checks (IP & Session)
+                   └─▶ Cache check
+                       └─▶ OpenAI API request
+                           └─▶ Response processing
+                               └─▶ Cache update
+                                   └─▶ Client display
 ```
 
-### 2. Error Handling Flow
-```
-1. Error Occurs
-   └─▶ Error handler catches (errorHandler.js)
-       └─▶ Error classification
-           └─▶ Logging & monitoring
-               └─▶ Client notification
-                   └─▶ Retry if applicable
-```
-
-### 3. Session Management Flow
+### 2. Session Management Flow
 ```
 1. New Connection
    └─▶ Session creation
-       └─▶ Rate limit initialization
-           └─▶ Cache allocation
-               └─▶ Cleanup scheduling
+       └─▶ Session fingerprint generation
+           └─▶ IP address tracking
+               └─▶ Rate limit initialization
+                   └─▶ Last activity timestamp
+                       └─▶ Cleanup on timeout
 ```
 
 ## Security Implementation
 
-### 1. Input Validation
-- Client-side sanitization
-- Server-side validation
-- XSS prevention
-- SQL injection protection
-- Input length limits
+### 1. Session Security
+- Session creation with fingerprinting
+- Basic IP tracking and validation
+- Session timeout handling
+- Last activity timestamp tracking
+- Automatic session cleanup
 
 ### 2. Rate Limiting
-- Per-session limits
-- IP-based limits
+- Dual-layer rate limiting:
+  * Session-based limits (requests & tokens)
+  * IP-based limits (shared across sessions)
+- Automatic cleanup of expired limits
 - Token usage tracking
-- Exponential backoff
-- Cache management
+- Request throttling
 
-### 3. Session Security
-- Secure cookie handling
-- CSRF protection
-- Session expiration
-- Activity tracking
-- Cleanup processes
-
-### 4. API Security
-- HTTPS enforcement
-- Security headers
+### 3. Request Security
+- Helmet security headers
 - CORS configuration
-- Request validation
-- Error sanitization
+- Basic input validation
+- Basic request sanitization
+- Basic error sanitization
 
 ## Performance Optimizations
 
-### 1. Caching Strategy
-- Response caching
-- Cache invalidation
-- Memory management
-- Cleanup processes
+### 1. Client-Side
+- Sequential message processing
+- Message history loading
+- Basic performance monitoring
+  * Long task detection
+  * Layout shift monitoring
+- Basic service worker registration
+- Basic static file caching
 
-### 2. Rate Limiting
-- Request throttling
-- Token tracking
-- IP tracking
-- Session tracking
+### 2. Server-Side
+- Response caching with time-based expiration
+- Request throttling through rate limits
+- Automatic session data cleanup
+- Basic static file serving with cache headers
 
-### 3. Client Optimizations
-- Message queuing
-- Lazy loading
-- Debounced input
-- Smooth animations
-- Resource optimization
+### 3. Caching Strategy
+- In-memory response cache with automatic cleanup
+- Time-based cache invalidation
+- Session-specific response caching
+- Cache key generation with cryptographic hashing
 
-## Monitoring and Maintenance
+## Error Handling
 
-### 1. Error Tracking
-- Error logging
-- Request logging
-- Performance monitoring
-- Usage statistics
+### 1. Client-Side
+- Basic global error catching
+- Basic unhandled rejection handling
+- Error message display in UI
+- Basic retry logic
+- Online/offline status handling
 
-### 2. System Health
-- Memory usage tracking
-- Cache statistics
-- Rate limit monitoring
-- Session tracking
-
-### 3. Cleanup Processes
-- Session cleanup
-- Cache cleanup
-- Rate limit reset
-- Memory optimization
+### 2. Server-Side
+- Error response standardization
+- Basic error classification
+- Basic request tracking
+- Console-based error logging
+- Rate limit error handling
 
 ## Development Guidelines
 
 ### 1. Code Organization
 - Modular architecture
 - Clear separation of concerns
-- Consistent naming conventions
-- Comprehensive documentation
+- Consistent error handling
+- Code documentation with JSDoc comments
 
-### 2. Error Handling
-- Standardized error codes
-- Consistent error formats
-- Proper error propagation
-- User-friendly messages
+### 2. Security Practices
+- Input validation
+- Session security
+- Rate limiting
+- Error sanitization
 
-### 3. Testing
-- Unit tests
-- Integration tests
-- Error scenario testing
-- Performance testing
+### 3. Performance
+- Response caching with expiration
+- Session data cleanup
+- Rate limit management
+- Basic static file caching
 
-### 4. Deployment
-- Version control
-- Continuous integration
-- Automated deployment
-- Environment configuration
+### 4. Development Tools
+- Console-based error logging
+- Basic performance monitoring (long tasks, layout shifts)
+- Development-mode debugging
