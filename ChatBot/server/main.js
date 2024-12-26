@@ -116,11 +116,10 @@ app.use(session({
     }
 }));
 
-// Rate limiting configuration with persistent memory store
-// This implementation uses a dedicated MemoryStore instance to ensure reliable IP tracking
-// The MemoryStore maintains a hash table of IP addresses and their request counts
+// Rate limiting configuration
+// This implementation uses the built-in memory store to track IP-based rate limits
+// The store maintains a hash table of IP addresses and their request counts
 // Even if a bot creates multiple sessions, they'll still be limited by their IP
-const { MemoryStore } = rateLimit;
 const limiter = rateLimit({
     windowMs: config.rateLimit.windowMs,
     max: config.rateLimit.max,
@@ -132,22 +131,6 @@ const limiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: false,
-    
-    // Use a dedicated MemoryStore instance with a cleanup interval
-    store: new MemoryStore({
-        // Clean up inactive IP entries every 5 minutes
-        // This prevents memory leaks from storing inactive IPs indefinitely
-        cleanupInterval: 5 * 60 * 1000,
-        
-        // Validate and standardize IP addresses
-        // This ensures IPv4/IPv6 addresses are handled consistently
-        // And prevents IP spoofing attempts
-        beforeIncrementHandler: (req) => {
-            const ip = req.ip;
-            // Additional IP validation could be added here
-            return ip;
-        }
-    }),
 
     // Enhanced IP detection
     // This looks for IP address in various headers and falls back to req.ip
