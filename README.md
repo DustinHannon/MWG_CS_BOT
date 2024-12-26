@@ -1,73 +1,67 @@
 # MWG CS BOT
+
 Morgan White Group - Customer Service Chat Bot using OpenAI models
 
 ## Description
-MWG CS BOT is a sophisticated customer service chatbot solution developed for Morgan White Group. It leverages OpenAI's advanced language models to provide intelligent, context-aware responses to customer inquiries. The system is designed to enhance customer support efficiency by automating responses to common questions while maintaining a natural, conversational experience.
 
-## Features
-- Real-time chat interface
-- AI-powered responses using OpenAI models
-- Web-based client application
-- Scalable server architecture
-- Responsive design for multiple devices
+MWG CS BOT is a customer service chatbot solution developed for Morgan White Group. It leverages OpenAI's language models to provide automated responses to customer inquiries through a web-based chat interface. The system uses a client-server architecture with a responsive web frontend and Node.js backend to deliver real-time chat capabilities.
+
+## Core Features
+
+- Real-time chat interface with message history and theme support
+- AI-powered responses using OpenAI models for natural conversation
+- Session-based authentication with secure cookie management
+- Comprehensive security measures including:
+  - IP and session-based rate limiting
+  - Request validation and sanitization
+  - Security headers and CORS protection
+- Performance optimizations through response caching and request throttling
 
 ## Project Structure
+
 ```
-ChatBot/
-├── client/                      # Frontend application
-│   ├── app/                    # Application logic
-│   │   ├── index.js           # Main client entry point
-│   │   └── modules/           # UI modules
-│   │       ├── chatUI.js      # Chat interface management
-│   │       ├── formHandler.js # Form processing
-│   │       └── themeHandler.js# Theme management
-│   ├── images/                # Static assets
-│   │   ├── favicon.ico       # Site favicon
-│   │   └── logo.png         # Site logo
-│   ├── index.html            # Main HTML file
-│   ├── service-worker.js     # Service worker for PWA
-│   └── styles.css           # Application styles
-├── server/                    # Backend server
-│   ├── config/              # Configuration
-│   │   └── config.js       # Server configuration
-│   ├── middleware/         # Server middleware
-│   │   ├── errorHandler.js # Error handling
-│   │   └── security.js    # Security middleware
-│   ├── services/          # Server services
-│   │   └── openaiService.js# OpenAI integration
-│   ├── main.js           # Server entry point
-│   └── utils.js         # Utility functions
-├── cleanup.sh           # Cleanup script
-├── package.json        # Project dependencies
-└── web.config         # Azure web app configuration
+.
+├── ChatBot/
+│   ├── client/
+│   │   ├── app/
+│   │   │   ├── modules/
+│   │   │   │   ├── chatUI.js
+│   │   │   │   ├── formHandler.js
+│   │   │   │   └── themeHandler.js
+│   │   │   └── index.js
+│   │   ├── images/
+│   │   │   ├── favicon.ico
+│   │   │   └── logo.png
+│   │   ├── index.html
+│   │   ├── service-worker.js
+│   │   └── styles.css
+│   ├── server/
+│   │   ├── config/
+│   │   │   └── config.js
+│   │   ├── middleware/
+│   │   │   ├── errorHandler.js
+│   │   │   └── security.js
+│   │   ├── services/
+│   │   │   └── openaiService.js
+│   │   ├── main.js
+│   │   └── utils.js
+│   ├── cleanup.sh
+│   ├── package.json
+│   └── web.config
+└── docs/
+    ├── API.md
+    └── ARCHITECTURE.md
 ```
 
-## Technologies Used
-- **Frontend**: HTML, CSS, JavaScript
-- **Backend**: Node.js
-- **AI Integration**: OpenAI API
-- **Development**: Modern JavaScript (ES6+)
+## Deployment
+
+The application is deployed as an Azure Web App using GitHub Actions for continuous deployment. When changes are pushed to the main branch, the application is automatically built, tested, and deployed to Azure.
 
 ## Documentation
-- [API Documentation](docs/API.md) - Comprehensive API reference
-- [Architecture Documentation](docs/ARCHITECTURE.md) - System design and implementation details
 
-## Getting Started
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   cd ChatBot
-   npm install
-   ```
-3. Start the server:
-   ```bash
-   npm start
-   ```
-## Temp Azure Web App
-https://mwgcsbot-apdcavd6ameddtdb.southcentralus-01.azurewebsites.net
+- [API Documentation](docs/API.md) - Comprehensive guide to API endpoints, authentication, rate limits, and error handling
+- [Architecture Documentation](docs/ARCHITECTURE.md) - Detailed system design, component structure, data flow, and security implementation
 
 ## License
-This project is licensed under the terms included in the LICENSE file.
 
-## Example Image:
-![image](https://github.com/user-attachments/assets/5ec2286b-4c10-423f-8596-8cc735bceb3e)
+This project is licensed under the terms included in the LICENSE file.
