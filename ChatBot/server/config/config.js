@@ -28,8 +28,9 @@
  * - ../middleware/security.js: Uses security settings
  */
 
-// Import dotenv for environment variable management
+// Import required dependencies
 import * as dotenv from 'dotenv';
+import { APIError, ErrorCodes } from '../middleware/errorHandler.js';
 
 // Load environment variables from .env file
 // This allows for different configurations in different environments
@@ -158,9 +159,9 @@ const config = {
 
 /**
  * Validates the configuration object
- * Ensures all required settings are present
+ * Ensures all required settings are present and valid
  * 
- * @throws {Error} If any required configuration is missing
+ * @throws {APIError} If any configuration validation fails
  * @returns {Object} Validated configuration object
  */
 const validateConfig = () => {
@@ -172,7 +173,52 @@ const validateConfig = () => {
     
     // Throw error if any required variables are missing
     if (missingVars.length > 0) {
-        throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+        throw new APIError(
+            `Missing required environment variables: ${missingVars.join(', ')}`,
+            500,
+            ErrorCodes.CONFIG_ERROR,
+            { missingVariables: missingVars }
+        );
+    }
+
+    // Validate port number
+    if (isNaN(config.port) || config.port < 0 || config.port > 65535) {
+        throw new APIError(
+            'Invalid port number specified',
+            500,
+            ErrorCodes.CONFIG_ERROR,
+            { port: config.port }
+        );
+    }
+
+    // Validate environment
+    if (!['development', 'production', 'test'].includes(config.nodeEnv)) {
+        throw new APIError(
+            'Invalid environment specified',
+            500,
+            ErrorCodes.CONFIG_ERROR,
+            { environment: config.nodeEnv }
+        );
+    }
+
+    // Validate rate limit settings
+    if (config.rateLimit.windowMs < 0 || config.rateLimit.max < 0) {
+        throw new APIError(
+            'Invalid rate limit configuration',
+            500,
+            ErrorCodes.CONFIG_ERROR,
+            { rateLimit: config.rateLimit }
+        );
+    }
+
+    // Validate OpenAI settings
+    if (!config.openai.model || !config.openai.maxTokens || config.openai.maxTokens < 0) {
+        throw new APIError(
+            'Invalid OpenAI configuration',
+            500,
+            ErrorCodes.CONFIG_ERROR,
+            { openai: config.openai }
+        );
     }
     
     return config;

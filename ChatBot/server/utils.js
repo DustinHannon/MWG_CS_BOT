@@ -57,7 +57,44 @@
  * @param {string} prompt - The user's original question or prompt
  * @returns {string} The enriched prompt with full company context
  */
+import { APIError, ErrorCodes } from './middleware/errorHandler.js';
+
+/**
+ * Enriches a user's prompt with Morgan White Group specific context
+ * 
+ * @param {string} prompt - The user's original question or prompt
+ * @returns {string} The enriched prompt with full company context
+ * @throws {APIError} If prompt is invalid or empty
+ */
 export function enrichUserPromptWithContext(prompt) {
+    // Validate input
+    if (!prompt) {
+        throw new APIError(
+            'Prompt cannot be empty',
+            400,
+            ErrorCodes.MISSING_FIELD,
+            { field: 'prompt' }
+        );
+    }
+
+    if (typeof prompt !== 'string') {
+        throw new APIError(
+            'Prompt must be a string',
+            400,
+            ErrorCodes.INVALID_INPUT,
+            { field: 'prompt', type: typeof prompt }
+        );
+    }
+
+    if (prompt.length > 1000) {
+        throw new APIError(
+            'Prompt exceeds maximum length of 1000 characters',
+            400,
+            ErrorCodes.INVALID_FORMAT,
+            { field: 'prompt', length: prompt.length }
+        );
+    }
+
     // The context template provides comprehensive information about
     // Morgan White Group's services, policies, and procedures
     const context = `

@@ -29,6 +29,7 @@
 
 // Import required security-related modules
 import { createHash } from 'crypto';         // Cryptographic functions
+import { ErrorCodes } from './errorHandler.js';  // Standardized error codes
 
 /**
  * Enhanced security middleware that adds various security headers and protections.
@@ -109,7 +110,7 @@ export const validateInput = (req, res, next) => {
     if (!question || typeof question !== 'string') {
         return res.status(400).json({ 
             error: 'Invalid input: question must be a non-empty string',
-            code: 'INVALID_INPUT_TYPE'
+            code: ErrorCodes.INVALID_INPUT
         });
     }
     
@@ -117,7 +118,7 @@ export const validateInput = (req, res, next) => {
     if (question.length > 500) {
         return res.status(400).json({ 
             error: 'Invalid input: question exceeds maximum length of 500 characters',
-            code: 'INPUT_TOO_LONG'
+            code: ErrorCodes.INVALID_FORMAT
         });
     }
 
@@ -125,7 +126,7 @@ export const validateInput = (req, res, next) => {
     if (question.trim().length === 0) {
         return res.status(400).json({
             error: 'Invalid input: question cannot be empty',
-            code: 'EMPTY_INPUT'
+            code: ErrorCodes.MISSING_FIELD
         });
     }
     
@@ -159,7 +160,7 @@ export const validateInput = (req, res, next) => {
     if (suspiciousPatterns.some(pattern => pattern.test(question))) {
         return res.status(400).json({
             error: 'Invalid input: potentially malicious content detected',
-            code: 'MALICIOUS_CONTENT'
+            code: ErrorCodes.INVALID_INPUT
         });
     }
 
@@ -172,7 +173,7 @@ export const validateInput = (req, res, next) => {
     if (sqlInjectionPatterns.some(pattern => pattern.test(question))) {
         return res.status(400).json({
             error: 'Invalid input: potential SQL injection detected',
-            code: 'SQL_INJECTION_ATTEMPT'
+            code: ErrorCodes.INVALID_INPUT
         });
     }
 
@@ -185,7 +186,7 @@ export const validateInput = (req, res, next) => {
     if (commandInjectionPatterns.some(pattern => pattern.test(question))) {
         return res.status(400).json({
             error: 'Invalid input: potential command injection detected',
-            code: 'COMMAND_INJECTION_ATTEMPT'
+            code: ErrorCodes.INVALID_INPUT
         });
     }
     

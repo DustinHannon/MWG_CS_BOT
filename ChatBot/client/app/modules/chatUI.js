@@ -41,6 +41,15 @@ export class ChatUI {
         this.isProcessing = false;   // Flag for message processing
         this.typingTimeout = null;   // Timeout for typing indicator
         this.scrollTimeout = null;   // Timeout for scroll management
+        
+        // Lazy loading state
+        this.isLoadingHistory = false;
+        this.hasMoreHistory = true;
+        this.currentPage = 1;
+        this.messagesPerPage = 20;
+        
+        // Set up scroll listener for lazy loading
+        this.setupLazyLoading();
     }
 
     /**
@@ -81,14 +90,59 @@ export class ChatUI {
      * Add an error message to the chat
      * @param {string} errorMessage - The error message to display
      */
-    async addErrorMessage(errorMessage) {
+    /**
+     * Add an error message to the chat
+     * @param {string|Object} error - Error message or error object from server
+     */
+    async addErrorMessage(error) {
         try {
             if (!this.dialogue) {
                 throw new Error('Chat dialogue container not found');
             }
+
+            // Format error message
+            let errorMessage;
+            if (typeof error === 'string') {
+                errorMessage = error;
+            } else {
+                // Handle server error response
+                errorMessage = error.error || error.message;
+                if (error.code) {
+                    errorMessage += ` (Error Code: ${error.code})`;
+                }
+                if (error.requestId) {
+                    errorMessage += `\nRequest ID: ${error.requestId}`;
+                }
+            }
+
+            // Create error message element with enhanced styling
             const messageElement = this.createMessageElement('bot-message error', errorMessage);
             messageElement.setAttribute('role', 'alert');
+            messageElement.setAttribute('aria-live', 'assertive');
+
+            // Add retry button for certain errors
+            if (error.code && [
+                'NETWORK_ERROR', 'TIMEOUT', 'SERVICE_UNAVAILABLE',
+                'RATE_LIMIT_EXCEEDED', 'OPENAI_API_ERROR'
+            ].includes(error.code)) {
+                const retryButton = document.createElement('button');
+                retryButton.textContent = 'Retry';
+                retryButton.className = 'retry-button';
+                retryButton.onclick = () => {
+                    // Remove the error message
+                    messageElement.remove();
+                    // Trigger form resubmission
+                    document.getElementById('prompt-form')?.dispatchEvent(
+                        new Event('submit', { cancelable: true })
+                    );
+                };
+                messageElement.appendChild(retryButton);
+            }
+
             await this.addMessageToDialogue(messageElement);
+
+            // Ensure error is visible
+            this.scrollToBottom();
         } catch (error) {
             console.error('Failed to add error message:', error);
             // Fallback error display if chat UI fails
@@ -100,21 +154,46 @@ export class ChatUI {
      * Handle UI-related errors
      * @param {Error} error - The error to handle
      */
+    /**
+     * Handle UI-related errors with enhanced visibility
+     * @param {Error} error - The error to handle
+     */
     handleUIError(error) {
-        // Create a fallback error display
+        // Create a prominent error display
         const errorContainer = document.createElement('div');
         errorContainer.className = 'chat-error-fallback';
         errorContainer.setAttribute('role', 'alert');
-        errorContainer.textContent = 'Chat interface error. Please refresh the page.';
-        
-        // Try to add to chat container, fallback to body
+        errorContainer.setAttribute('aria-live', 'assertive');
+
+        // Create error message with icon
+        const errorIcon = document.createElement('span');
+        errorIcon.className = 'error-icon';
+        errorIcon.innerHTML = '⚠️';
+        errorContainer.appendChild(errorIcon);
+
+        // Add error message
+        const messageText = document.createElement('span');
+        messageText.className = 'error-text';
+        messageText.textContent = error.message || 'Chat interface error. Please refresh the page.';
+        errorContainer.appendChild(messageText);
+
+        // Add refresh button
+        const refreshButton = document.createElement('button');
+        refreshButton.textContent = 'Refresh Page';
+        refreshButton.className = 'refresh-button';
+        refreshButton.onclick = () => window.location.reload();
+        errorContainer.appendChild(refreshButton);
+
+        // Add to container
         const container = this.chatContainer || document.body;
         container.appendChild(errorContainer);
 
-        // Remove after 5 seconds
-        setTimeout(() => {
-            errorContainer.remove();
-        }, 5000);
+        // Log error for debugging
+        console.error('Chat UI Error:', {
+            message: error.message,
+            code: error.code,
+            stack: error.stack
+        });
     }
 
     /**
@@ -377,6 +456,113 @@ export class ChatUI {
             }
         } catch (error) {
             console.error('Failed to remove typing indicator:', error);
+        }
+    }
+
+    /**
+     * Set up lazy loading scroll listener
+     */
+    setupLazyLoading() {
+        let scrollDebounceTimeout;
+        
+        this.chatContainer.addEventListener('scroll', () => {
+            if (scrollDebounceTimeout) {
+                clearTimeout(scrollDebounceTimeout);
+            }
+            
+            scrollDebounceTimeout = setTimeout(() => {
+                if (this.shouldLoadMoreHistory()) {
+                    this.loadMoreHistory();
+                }
+            }, 150); // Debounce scroll events
+        });
+    }
+
+    /**
+     * Check if we should load more history
+     * @returns {boolean}
+     */
+    shouldLoadMoreHistory() {
+        if (!this.hasMoreHistory || this.isLoadingHistory) {
+            return false;
+        }
+        
+        // Load more when user scrolls near the top (within 100px)
+        return this.chatContainer.scrollTop < 100;
+    }
+
+    /**
+     * Load more message history
+     */
+    async loadMoreHistory() {
+        if (this.isLoadingHistory || !this.hasMoreHistory) return;
+        
+        try {
+            this.isLoadingHistory = true;
+            
+            // Show loading indicator at the top
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.className = 'history-loading-indicator';
+            loadingIndicator.textContent = 'Loading previous messages...';
+            this.dialogue.insertBefore(loadingIndicator, this.dialogue.firstChild);
+            
+            // Get current scroll position and height
+            const oldHeight = this.chatContainer.scrollHeight;
+            
+            // Fetch more messages from server
+            const response = await fetch(`/api/messages?page=${this.currentPage}&limit=${this.messagesPerPage}`);
+            const data = await response.json();
+            
+            // Remove loading indicator
+            loadingIndicator.remove();
+            
+            if (!response.ok) {
+                throw new Error('Failed to load message history', { 
+                    cause: { 
+                        code: response.status === 429 ? 'RATE_LIMIT_EXCEEDED' : 'API_ERROR',
+                        status: response.status 
+                    }
+                });
+            }
+            
+            // Update has more flag
+            this.hasMoreHistory = data.hasMore;
+            
+            if (data.messages && data.messages.length > 0) {
+                // Create document fragment for better performance
+                const fragment = document.createDocumentFragment();
+                
+                // Add messages to the top of the chat
+                data.messages.forEach(msg => {
+                    const messageElement = this.createMessageElement(
+                        msg.type === 'user' ? 'user-message' : 'bot-message',
+                        msg.content
+                    );
+                    fragment.appendChild(messageElement);
+                });
+                
+                // Insert all messages at once
+                this.dialogue.insertBefore(fragment, this.dialogue.firstChild);
+                
+                // Maintain scroll position
+                const newHeight = this.chatContainer.scrollHeight;
+                this.chatContainer.scrollTop = newHeight - oldHeight;
+                
+                this.currentPage++;
+            }
+        } catch (error) {
+            console.error('Failed to load message history:', error);
+            // Create error object with standard code
+            const errorObj = {
+                code: error.cause?.code || 
+                      (error.name === 'TypeError' ? 'NETWORK_ERROR' : 'API_ERROR'),
+                message: 'Failed to load previous messages'
+            };
+            
+            // Use standard error handling
+            this.handleUIError(errorObj);
+        } finally {
+            this.isLoadingHistory = false;
         }
     }
 
