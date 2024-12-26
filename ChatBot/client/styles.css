@@ -227,6 +227,15 @@ main {
     transform: translateY(0);
 }
 
+/* Container for timestamp and copy button */
+#dialogue li .message-timestamp {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+    white-space: nowrap;
+}
+
 #dialogue li:nth-child(even) {
     background-color: var(--chat-user-bg);
 }
@@ -250,24 +259,20 @@ main {
 
 /* Message Timestamp */
 .message-timestamp {
-    flex: 0 0 auto;
     font-size: 0.75rem;
     color: var(--secondary-text);
     opacity: 0.8;
-    margin-left: auto;
-    align-self: flex-start;
 }
 
 /* Copy Button */
 .copy-button {
-    flex: 0 0 auto;
     background: transparent;
     border: none;
     padding: 0.25rem;
-    margin-left: 0.5rem;
     cursor: pointer;
     opacity: 0.5;
     transition: opacity 0.2s ease;
+    order: 1;
 }
 
 .copy-button:hover {
