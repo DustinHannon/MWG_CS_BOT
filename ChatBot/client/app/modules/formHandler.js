@@ -150,18 +150,24 @@ export class FormHandler {
             this.chatUI.showTypingIndicator();
 
             const response = await this.makeRequest(question);
+            const responseData = await response.json();
             
             if (!response.ok) {
-                throw new Error(response.statusText);
+                // Pass the full response object to error handler
+                throw Object.assign(new Error(responseData.error || response.statusText), {
+                    status: response.status,
+                    code: responseData.code,
+                    requestId: responseData.requestId,
+                    timestamp: responseData.timestamp
+                });
             }
 
-            const { data } = await response.json();
-            if (!data || typeof data !== 'string') {
+            if (!responseData.data || typeof responseData.data !== 'string') {
                 throw new Error('Invalid response format');
             }
             
             this.chatUI.removeTypingIndicator();
-            this.chatUI.addBotResponse(data);
+            this.chatUI.addBotResponse(responseData.data);
             
             // Reset retry count on successful request
             this.retryCount = 0;
@@ -217,11 +223,18 @@ export class FormHandler {
         this.chatUI.removeTypingIndicator();
 
         try {
-            // Parse error response if it's a server error
-            const errorData = error.response ? await error.response.json() : null;
+            let errorData;
+            // Try to parse response as JSON if it exists
+            if (error instanceof Response) {
+                try {
+                    errorData = await error.json();
+                } catch (e) {
+                    console.error('Failed to parse error response:', e);
+                }
+            }
             
             // Handle rate limiting
-            if (error.status === 429 || errorData?.code === 'RATE_LIMIT_EXCEEDED') {
+            if (error.status === 429 || (errorData && errorData.code === 'RATE_LIMIT_EXCEEDED')) {
                 const retryAfter = error.headers?.get('Retry-After') || errorData?.retryAfter || 60;
                 this.chatUI.addErrorMessage({
                     error: `Rate limit exceeded. Please try again in ${retryAfter} seconds.`,
@@ -247,10 +260,15 @@ export class FormHandler {
                 return this.handleSubmit(question);
             }
 
-            // Show appropriate error message
+            // Determine appropriate error response
             const errorResponse = {
-                error: errorData?.error || this.getErrorMessage(error),
-                code: errorData?.code || error.code || 'INTERNAL_ERROR',
+                error: errorData ? errorData.error : this.getErrorMessage(error),
+                code: errorData ? errorData.code : (
+                    error.name === 'AbortError' ? 'TIMEOUT' :
+                    error instanceof TypeError ? 'NETWORK_ERROR' :
+                    error.status >= 500 ? 'INTERNAL_ERROR' :
+                    'API_ERROR'
+                ),
                 requestId: errorData?.requestId,
                 timestamp: errorData?.timestamp || new Date().toISOString()
             };
@@ -287,8 +305,23 @@ export class FormHandler {
      * @returns {boolean} Whether to retry
      */
     shouldRetry(error) {
-        // Retry on network errors or 5xx server errors
-        return !error.response || (error.response && error.response.status >= 500);
+        // Retry on network errors
+        if (error instanceof TypeError || error.name === 'TypeError') {
+            return true;
+        }
+        
+        // Retry on 5xx server errors
+        if (error.status >= 500) {
+            return true;
+        }
+
+        // Retry on timeout errors
+        if (error.name === 'AbortError') {
+            return true;
+        }
+
+        // Don't retry on client errors (4xx) or other errors
+        return false;
     }
 
     /**
@@ -302,9 +335,9 @@ export class FormHandler {
             return 'Request timed out. Please try again.';
         }
 
-        // If we have an error code from the server, use it to get the message
-        if (error.response?.data?.code) {
-            switch (error.response.data.code) {
+        // If we have an error code, use it to get the message
+        if (error.code) {
+            switch (error.code) {
                 // Server errors
                 case 'INTERNAL_ERROR':
                     return 'An unexpected error occurred. Please try again later.';
