@@ -43,7 +43,7 @@ import session from 'express-session';
 // CORS enables cross-origin requests with security controls
 import cors from 'cors';
 // Crypto for generating secure random values
-import crypto from 'crypto';
+import crypto, { createHash } from 'crypto';
 
 // Custom services and middleware imports
 import openaiService from './services/openaiService.js';
