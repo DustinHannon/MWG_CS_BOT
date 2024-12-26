@@ -140,9 +140,9 @@ const limiter = rateLimit({
         const realIP = req.headers['x-real-ip'];
         const forwardedFor = req.headers['x-forwarded-for'];
         
-        // Use the first forwarded IP if available (client's real IP)
-        // Otherwise fall back to x-real-ip or req.ip
-        return (forwardedFor ? forwardedFor.split(',')[0] : realIP) || req.ip;
+        // Get raw IP and remove port number if present
+        const rawIP = (forwardedFor ? forwardedFor.split(',')[0] : realIP) || req.ip;
+        return rawIP.split(':')[0]; // Remove port number if present
     },
 
     // Handler for when rate limit is exceeded
@@ -199,9 +199,11 @@ app.get('/health', (req, res) => {
 // Create or retrieve session with IP tracking
 app.post('/api/session', (req, res) => {
     // Get client IP using the same logic as rate limiter
-    const clientIP = (req.headers['x-forwarded-for'] 
+    // Extract IP without port number
+    const rawIP = (req.headers['x-forwarded-for'] 
         ? req.headers['x-forwarded-for'].split(',')[0] 
         : req.headers['x-real-ip']) || req.ip;
+    const clientIP = rawIP.split(':')[0]; // Remove port number if present
 
     if (!req.session.id) {
         req.session.regenerate((err) => {
@@ -298,10 +300,11 @@ app.post('/api/openai', validateInput, async (req, res) => {
         });
     }
 
-    // Get current client IP
-    const clientIP = (req.headers['x-forwarded-for'] 
+    // Get current client IP without port number
+    const rawIP = (req.headers['x-forwarded-for'] 
         ? req.headers['x-forwarded-for'].split(',')[0] 
         : req.headers['x-real-ip']) || req.ip;
+    const clientIP = rawIP.split(':')[0]; // Remove port number if present
 
     // Verify session integrity
     const currentFingerprint = createHash('sha256')
