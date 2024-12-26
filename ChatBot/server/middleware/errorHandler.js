@@ -52,12 +52,14 @@ export const errorHandler = (err, req, res, next) => {
     };
 
     // Enhanced error logging with context
-    // In development, includes stack trace and additional details
     console.error('Error:', {
-        ...error,
-        // Only include stack trace in development
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-        // Additional context for debugging
+        message: error.message,
+        code: error.code,
+        statusCode: error.statusCode,
+        path: error.path,
+        method: error.method,
+        requestId: error.requestId,
+        timestamp: error.timestamp,
         headers: sanitizeHeaders(req.headers),
         session: req.session ? {
             id: req.session.id,
@@ -68,22 +70,11 @@ export const errorHandler = (err, req, res, next) => {
     // Prepare client-safe error response
     // Ensures sensitive information is not sent to the client
     const errorResponse = {
-        error: process.env.NODE_ENV === 'development' 
-            ? error.message 
-            : getClientSafeMessage(error),
+        error: getClientSafeMessage(error),
         code: error.code,
         requestId: error.requestId,
         timestamp: error.timestamp
     };
-
-    // Add additional debug information in development
-    if (process.env.NODE_ENV === 'development') {
-        errorResponse.stack = error.stack;
-        errorResponse.context = {
-            path: error.path,
-            method: error.method
-        };
-    }
 
     // Send error response to client
     res.status(error.statusCode).json(errorResponse);

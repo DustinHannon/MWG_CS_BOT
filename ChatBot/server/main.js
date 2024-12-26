@@ -95,11 +95,8 @@ app.use(cors({
     exposedHeaders: ['Content-Length', 'X-Request-Id']
 }));
 
-// Session secret generation
-// In production, use a cryptographically secure random value
-const sessionSecret = process.env.NODE_ENV === 'production' 
-    ? crypto.randomBytes(32).toString('hex')
-    : 'dev-secret-key';
+// Session secret generation using cryptographically secure random value
+const sessionSecret = crypto.randomBytes(32).toString('hex');
 
 // Session configuration for user state management
 app.use(session({
