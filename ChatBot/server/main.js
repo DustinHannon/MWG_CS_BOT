@@ -215,7 +215,7 @@ app.post('/api/session', (req, res) => {
                 });
             }
 
-            // Store session metadata
+            // Store session metadata and save
             req.session.created = Date.now();
             req.session.ip = clientIP;
             req.session.userAgent = req.headers['user-agent'];
@@ -227,12 +227,23 @@ app.post('/api/session', (req, res) => {
                 .digest('hex');
             req.session.fingerprint = fingerprint;
 
-            console.log(`New session created: ${req.session.id} from IP: ${clientIP}`);
-            
-            res.json({ 
-                sessionId: req.session.id,
-                created: req.session.created,
-                fingerprint: fingerprint // Client should store and send this back
+            // Save session data
+            req.session.save((saveErr) => {
+                if (saveErr) {
+                    console.error('Session save failed:', saveErr);
+                    return res.status(500).json({ 
+                        error: 'Failed to save session',
+                        code: 'SESSION_SAVE_ERROR'
+                    });
+                }
+
+                console.log(`New session created: ${req.session.id} from IP: ${clientIP}`);
+                
+                res.json({ 
+                    sessionId: req.session.id,
+                    created: req.session.created,
+                    fingerprint: fingerprint // Client should store and send this back
+                });
             });
         });
     } else {
@@ -256,13 +267,24 @@ app.post('/api/session', (req, res) => {
             return;
         }
 
-        // Update last activity
+        // Update last activity and save
         req.session.lastActivity = Date.now();
         
-        res.json({ 
-            sessionId: req.session.id,
-            created: req.session.created,
-            fingerprint: req.session.fingerprint
+        // Save session data
+        req.session.save((saveErr) => {
+            if (saveErr) {
+                console.error('Session save failed:', saveErr);
+                return res.status(500).json({ 
+                    error: 'Failed to save session',
+                    code: 'SESSION_SAVE_ERROR'
+                });
+            }
+            
+            res.json({ 
+                sessionId: req.session.id,
+                created: req.session.created,
+                fingerprint: req.session.fingerprint
+            });
         });
     }
 });
@@ -325,8 +347,20 @@ app.post('/api/openai', validateInput, async (req, res) => {
         return;
     }
 
-    // Update session activity timestamp
+    // Update session activity timestamp and save
     req.session.lastActivity = Date.now();
+    
+    // Save session data
+    await new Promise((resolve, reject) => {
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save failed:', err);
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
+    });
 
     try {
         // Pass both session ID and IP for comprehensive tracking
