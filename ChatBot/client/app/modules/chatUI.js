@@ -215,19 +215,20 @@ export class ChatUI {
             const formattedContent = this.formatMessageContent(content);
             messageContent.innerHTML = formattedContent;
 
-            // Add timestamp to message
+            // Create timestamp container
             const timestamp = document.createElement('div');
             timestamp.className = 'message-timestamp';
             timestamp.textContent = this.formatTimestamp(new Date());
             
             messageItem.appendChild(messageContent);
-            messageItem.appendChild(timestamp);
 
-            // Add copy button for bot messages
+            // Add copy button inside timestamp container for bot messages
             if (className.includes('bot-message')) {
                 const copyButton = this.createCopyButton(formattedContent);
-                messageItem.appendChild(copyButton);
+                timestamp.appendChild(copyButton);
             }
+            
+            messageItem.appendChild(timestamp);
         } catch (error) {
             console.error('Failed to create message element:', error);
             messageContent.textContent = content; // Fallback to plain text
