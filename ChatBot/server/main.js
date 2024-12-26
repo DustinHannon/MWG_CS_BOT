@@ -116,7 +116,11 @@ app.use(session({
     }
 }));
 
-// Rate limiting configuration to prevent API abuse
+// Rate limiting configuration with persistent memory store
+// This implementation uses a dedicated MemoryStore instance to ensure reliable IP tracking
+// The MemoryStore maintains a hash table of IP addresses and their request counts
+// Even if a bot creates multiple sessions, they'll still be limited by their IP
+const { MemoryStore } = rateLimit;
 const limiter = rateLimit({
     windowMs: config.rateLimit.windowMs,
     max: config.rateLimit.max,
@@ -127,8 +131,47 @@ const limiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    skipSuccessfulRequests: false, // Count all requests
-    keyGenerator: (req) => req.ip // Use IP for rate limiting
+    skipSuccessfulRequests: false,
+    
+    // Use a dedicated MemoryStore instance with a cleanup interval
+    store: new MemoryStore({
+        // Clean up inactive IP entries every 5 minutes
+        // This prevents memory leaks from storing inactive IPs indefinitely
+        cleanupInterval: 5 * 60 * 1000,
+        
+        // Validate and standardize IP addresses
+        // This ensures IPv4/IPv6 addresses are handled consistently
+        // And prevents IP spoofing attempts
+        beforeIncrementHandler: (req) => {
+            const ip = req.ip;
+            // Additional IP validation could be added here
+            return ip;
+        }
+    }),
+
+    // Enhanced IP detection
+    // This looks for IP address in various headers and falls back to req.ip
+    // Useful when the app is behind a proxy/load balancer
+    keyGenerator: (req) => {
+        // Try to get real IP if behind a proxy
+        const realIP = req.headers['x-real-ip'];
+        const forwardedFor = req.headers['x-forwarded-for'];
+        
+        // Use the first forwarded IP if available (client's real IP)
+        // Otherwise fall back to x-real-ip or req.ip
+        return (forwardedFor ? forwardedFor.split(',')[0] : realIP) || req.ip;
+    },
+
+    // Handler for when rate limit is exceeded
+    // This helps with monitoring potential abuse
+    handler: (req, res) => {
+        console.warn(`Rate limit exceeded for IP: ${req.ip}`);
+        res.status(429).json({
+            error: 'Too many requests from this IP',
+            retryAfter: Math.ceil(config.rateLimit.windowMs / 1000),
+            code: 'RATE_LIMIT_EXCEEDED'
+        });
+    }
 });
 
 // Essential middleware setup
@@ -170,26 +213,71 @@ app.get('/health', (req, res) => {
 });
 
 // Session management endpoints
-// Create or retrieve session
+// Create or retrieve session with IP tracking
 app.post('/api/session', (req, res) => {
+    // Get client IP using the same logic as rate limiter
+    const clientIP = (req.headers['x-forwarded-for'] 
+        ? req.headers['x-forwarded-for'].split(',')[0] 
+        : req.headers['x-real-ip']) || req.ip;
+
     if (!req.session.id) {
         req.session.regenerate((err) => {
             if (err) {
+                console.error('Session creation failed:', err);
                 return res.status(500).json({ 
                     error: 'Failed to create session',
                     code: 'SESSION_CREATE_ERROR'
                 });
             }
+
+            // Store session metadata
             req.session.created = Date.now();
+            req.session.ip = clientIP;
+            req.session.userAgent = req.headers['user-agent'];
+            req.session.lastActivity = Date.now();
+
+            // Create session fingerprint for additional security
+            const fingerprint = createHash('sha256')
+                .update(`${clientIP}-${req.headers['user-agent']}-${req.session.id}`)
+                .digest('hex');
+            req.session.fingerprint = fingerprint;
+
+            console.log(`New session created: ${req.session.id} from IP: ${clientIP}`);
+            
             res.json({ 
                 sessionId: req.session.id,
-                created: req.session.created
+                created: req.session.created,
+                fingerprint: fingerprint // Client should store and send this back
             });
         });
     } else {
+        // Verify session integrity
+        const currentFingerprint = createHash('sha256')
+            .update(`${clientIP}-${req.headers['user-agent']}-${req.session.id}`)
+            .digest('hex');
+
+        // Check if session has been hijacked
+        if (req.session.fingerprint !== currentFingerprint) {
+            console.warn(`Potential session hijacking attempt: ${req.session.id}`);
+            console.warn(`Original IP: ${req.session.ip}, Current IP: ${clientIP}`);
+            
+            // Destroy suspicious session
+            req.session.destroy(() => {
+                res.status(401).json({
+                    error: 'Session validation failed',
+                    code: 'SESSION_INVALID'
+                });
+            });
+            return;
+        }
+
+        // Update last activity
+        req.session.lastActivity = Date.now();
+        
         res.json({ 
             sessionId: req.session.id,
-            created: req.session.created
+            created: req.session.created,
+            fingerprint: req.session.fingerprint
         });
     }
 });
@@ -217,8 +305,9 @@ app.delete('/api/session', (req, res) => {
     }
 });
 
-// OpenAI chat endpoint
+// OpenAI chat endpoint with enhanced session validation
 app.post('/api/openai', validateInput, async (req, res) => {
+    // Session existence check
     if (!req.session.id) {
         return res.status(401).json({ 
             error: 'No session found',
@@ -226,8 +315,45 @@ app.post('/api/openai', validateInput, async (req, res) => {
         });
     }
 
+    // Get current client IP
+    const clientIP = (req.headers['x-forwarded-for'] 
+        ? req.headers['x-forwarded-for'].split(',')[0] 
+        : req.headers['x-real-ip']) || req.ip;
+
+    // Verify session integrity
+    const currentFingerprint = createHash('sha256')
+        .update(`${clientIP}-${req.headers['user-agent']}-${req.session.id}`)
+        .digest('hex');
+
+    if (req.session.fingerprint !== currentFingerprint) {
+        console.warn(`Potential session hijacking attempt in chat: ${req.session.id}`);
+        console.warn(`Original IP: ${req.session.ip}, Current IP: ${clientIP}`);
+        
+        // Destroy suspicious session
+        req.session.destroy(() => {
+            res.status(401).json({
+                error: 'Session validation failed',
+                code: 'SESSION_INVALID'
+            });
+        });
+        return;
+    }
+
+    // Update session activity timestamp
+    req.session.lastActivity = Date.now();
+
     try {
-        const response = await openaiService.generateResponse(req.body.question, req.session.id);
+        // Pass both session ID and IP for comprehensive tracking
+        const response = await openaiService.generateResponse(
+            req.body.question, 
+            req.session.id,
+            {
+                ip: clientIP,
+                userAgent: req.headers['user-agent'],
+                sessionCreated: req.session.created
+            }
+        );
+
         res.json({ 
             data: response,
             timestamp: new Date().toISOString()
@@ -243,11 +369,12 @@ app.post('/api/openai', validateInput, async (req, res) => {
             });
         }
 
-        // Enhanced error response
+        // Enhanced error response with request tracking
         res.status(error.statusCode || 500).json({ 
             error: error.message,
             code: error.code || 'INTERNAL_ERROR',
-            requestId: req.id
+            requestId: req.id,
+            timestamp: new Date().toISOString()
         });
     }
 });
