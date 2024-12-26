@@ -537,8 +537,15 @@ class OpenAIService {
                 this.checkIPRateLimit(ip);
             }
 
-            // Store user message in history
-            this.storeMessage(sessionId, prompt, 'user');
+            // Store user message in session history
+            if (!this.sessions.has(sessionId)) {
+                this.sessions.set(sessionId, []);
+            }
+            this.sessions.get(sessionId).push({
+                type: 'user',
+                content: prompt,
+                timestamp: new Date().toISOString()
+            });
 
             // Check cache
             const cachedResponse = this.getCachedResponse(prompt, sessionId);
@@ -547,8 +554,12 @@ class OpenAIService {
                 if (ip) {
                     this.updateIPRateLimit(ip, sessionId, 0);
                 }
-                // Store bot response in history
-                this.storeMessage(sessionId, cachedResponse, 'bot');
+                // Store bot response in session history
+                this.sessions.get(sessionId).push({
+                    type: 'bot',
+                    content: cachedResponse,
+                    timestamp: new Date().toISOString()
+                });
                 return cachedResponse;
             }
 
@@ -599,8 +610,12 @@ class OpenAIService {
             // Cache the response
             this.setCachedResponse(prompt, sessionId, generatedResponse);
 
-            // Store bot response in history
-            this.storeMessage(sessionId, generatedResponse, 'bot');
+            // Store bot response in session history
+            this.sessions.get(sessionId).push({
+                type: 'bot',
+                content: generatedResponse,
+                timestamp: new Date().toISOString()
+            });
 
             return generatedResponse;
 
@@ -703,6 +718,64 @@ class OpenAIService {
                 timing: this.lastRequestTime.size
             }
         };
+    }
+
+    /**
+     * Get message history for a session with pagination
+     * 
+     * @param {string} sessionId - Session identifier
+     * @param {number} page - Page number (1-based)
+     * @param {number} limit - Number of messages per page
+     * @returns {Object} Paginated message history
+     */
+    getSessionHistory(sessionId, page = 1, limit = 20) {
+        try {
+            if (!sessionId) {
+                throw new APIError(
+                    'Session ID is required',
+                    400,
+                    ErrorCodes.MISSING_FIELD,
+                    { field: 'sessionId' }
+                );
+            }
+
+            // Validate pagination parameters
+            page = Math.max(1, parseInt(page) || 1);
+            limit = Math.min(50, Math.max(1, parseInt(limit) || 20));
+
+            const sessionMessages = this.sessions.get(sessionId) || [];
+            const startIndex = (page - 1) * limit;
+            const endIndex = startIndex + limit;
+            
+            // Get messages for requested page
+            const messages = sessionMessages
+                .slice(startIndex, endIndex)
+                .map(msg => ({
+                    type: msg.type,
+                    content: msg.content,
+                    timestamp: msg.timestamp
+                }));
+
+            return {
+                messages,
+                hasMore: endIndex < sessionMessages.length,
+                currentPage: page,
+                totalMessages: sessionMessages.length
+            };
+        } catch (error) {
+            console.error('Failed to get session history:', error);
+            
+            if (error instanceof APIError) {
+                throw error;
+            }
+
+            throw new APIError(
+                'Failed to retrieve message history',
+                500,
+                ErrorCodes.HISTORY_FETCH_ERROR,
+                { originalError: error.message }
+            );
+        }
     }
 }
 
