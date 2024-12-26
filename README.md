@@ -14,14 +14,32 @@ MWG CS BOT is a sophisticated customer service chatbot solution developed for Mo
 ## Project Structure
 ```
 ChatBot/
-├── client/                 # Frontend application
-│   ├── app/               # Application logic
-│   ├── images/            # Static assets
-│   ├── index.html        # Main HTML file
-│   └── styles.css        # Application styles
-└── server/               # Backend server
-    ├── main.js          # Server entry point
-    └── utils.js         # Utility functions
+├── client/                      # Frontend application
+│   ├── app/                    # Application logic
+│   │   ├── index.js           # Main client entry point
+│   │   └── modules/           # UI modules
+│   │       ├── chatUI.js      # Chat interface management
+│   │       ├── formHandler.js # Form processing
+│   │       └── themeHandler.js# Theme management
+│   ├── images/                # Static assets
+│   │   ├── favicon.ico       # Site favicon
+│   │   └── logo.png         # Site logo
+│   ├── index.html            # Main HTML file
+│   ├── service-worker.js     # Service worker for PWA
+│   └── styles.css           # Application styles
+├── server/                    # Backend server
+│   ├── config/              # Configuration
+│   │   └── config.js       # Server configuration
+│   ├── middleware/         # Server middleware
+│   │   ├── errorHandler.js # Error handling
+│   │   └── security.js    # Security middleware
+│   ├── services/          # Server services
+│   │   └── openaiService.js# OpenAI integration
+│   ├── main.js           # Server entry point
+│   └── utils.js         # Utility functions
+├── cleanup.sh           # Cleanup script
+├── package.json        # Project dependencies
+└── web.config         # Azure web app configuration
 ```
 
 ## Technologies Used
@@ -29,6 +47,10 @@ ChatBot/
 - **Backend**: Node.js
 - **AI Integration**: OpenAI API
 - **Development**: Modern JavaScript (ES6+)
+
+## Documentation
+- [API Documentation](docs/API.md) - Comprehensive API reference
+- [Architecture Documentation](docs/ARCHITECTURE.md) - System design and implementation details
 
 ## Getting Started
 1. Clone the repository
