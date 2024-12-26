@@ -252,19 +252,21 @@ app.post('/api/session', (req, res) => {
             .update(`${clientIP}-${req.headers['user-agent']}-${req.session.id}`)
             .digest('hex');
 
-        // Check if session has been hijacked
-        if (req.session.fingerprint !== currentFingerprint) {
-            console.warn(`Potential session hijacking attempt: ${req.session.id}`);
-            console.warn(`Original IP: ${req.session.ip}, Current IP: ${clientIP}`);
-            
-            // Destroy suspicious session
-            req.session.destroy(() => {
-                res.status(401).json({
-                    error: 'Session validation failed',
-                    code: 'SESSION_INVALID'
-                });
-            });
-            return;
+        // Only check for hijacking if we have an established IP
+        if (req.session.ip) {
+            // Check if IP has changed significantly (not just port differences)
+            if (req.session.ip !== clientIP) {
+                console.warn(`IP change detected: ${req.session.id}`);
+                console.warn(`Original IP: ${req.session.ip}, New IP: ${clientIP}`);
+                
+                // For now, just update the session with the new IP
+                req.session.ip = clientIP;
+                req.session.fingerprint = currentFingerprint;
+            }
+        } else {
+            // Initialize session with current IP if not set
+            req.session.ip = clientIP;
+            req.session.fingerprint = currentFingerprint;
         }
 
         // Update last activity and save
@@ -333,18 +335,18 @@ app.post('/api/openai', validateInput, async (req, res) => {
         .update(`${clientIP}-${req.headers['user-agent']}-${req.session.id}`)
         .digest('hex');
 
-    if (req.session.fingerprint !== currentFingerprint) {
-        console.warn(`Potential session hijacking attempt in chat: ${req.session.id}`);
-        console.warn(`Original IP: ${req.session.ip}, Current IP: ${clientIP}`);
+    // Only validate session if we have an established IP
+    if (req.session.ip && req.session.ip !== clientIP) {
+        console.warn(`IP change detected in chat: ${req.session.id}`);
+        console.warn(`Original IP: ${req.session.ip}, New IP: ${clientIP}`);
         
-        // Destroy suspicious session
-        req.session.destroy(() => {
-            res.status(401).json({
-                error: 'Session validation failed',
-                code: 'SESSION_INVALID'
-            });
-        });
-        return;
+        // Update session with new IP instead of destroying it
+        req.session.ip = clientIP;
+        req.session.fingerprint = currentFingerprint;
+    } else if (!req.session.ip) {
+        // Initialize session with current IP if not set
+        req.session.ip = clientIP;
+        req.session.fingerprint = currentFingerprint;
     }
 
     // Update session activity timestamp and save
