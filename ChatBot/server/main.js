@@ -47,7 +47,7 @@ import crypto, { createHash } from 'crypto';
 
 // Custom services and middleware imports
 import openaiService from './services/openaiService.js';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { errorHandler, notFoundHandler, ErrorCodes } from './middleware/errorHandler.js';
 import { securityMiddleware, validateInput } from './middleware/security.js';
 import config from './config/config.js';
 
@@ -123,7 +123,7 @@ const limiter = rateLimit({
     message: {
         error: 'Too many requests from this IP',
         retryAfter: Math.ceil(config.rateLimit.windowMs / 1000),
-        code: 'RATE_LIMIT_EXCEEDED'
+        code: ErrorCodes.RATE_LIMIT_EXCEEDED
     },
     standardHeaders: true,
     legacyHeaders: false,
@@ -149,7 +149,7 @@ const limiter = rateLimit({
         res.status(429).json({
             error: 'Too many requests from this IP',
             retryAfter: Math.ceil(config.rateLimit.windowMs / 1000),
-            code: 'RATE_LIMIT_EXCEEDED'
+            code: ErrorCodes.RATE_LIMIT_EXCEEDED
         });
     }
 });
@@ -208,7 +208,7 @@ app.post('/api/session', (req, res) => {
                 console.error('Session creation failed:', err);
                 return res.status(500).json({ 
                     error: 'Failed to create session',
-                    code: 'SESSION_CREATE_ERROR'
+                    code: ErrorCodes.SESSION_CREATE_ERROR
                 });
             }
 
@@ -229,8 +229,8 @@ app.post('/api/session', (req, res) => {
                 if (saveErr) {
                     console.error('Session save failed:', saveErr);
                     return res.status(500).json({ 
-                        error: 'Failed to save session',
-                        code: 'SESSION_SAVE_ERROR'
+                    error: 'Failed to save session',
+                    code: ErrorCodes.SESSION_SAVE_ERROR
                     });
                 }
 
@@ -275,7 +275,7 @@ app.post('/api/session', (req, res) => {
                 console.error('Session save failed:', saveErr);
                 return res.status(500).json({ 
                     error: 'Failed to save session',
-                    code: 'SESSION_SAVE_ERROR'
+                    code: ErrorCodes.SESSION_SAVE_ERROR
                 });
             }
             
@@ -297,7 +297,7 @@ app.delete('/api/session', (req, res) => {
             if (err) {
                 return res.status(500).json({ 
                     error: 'Failed to destroy session',
-                    code: 'SESSION_DESTROY_ERROR'
+                    code: ErrorCodes.SESSION_DESTROY_ERROR
                 });
             }
             res.clearCookie('mwg_session');
@@ -306,7 +306,7 @@ app.delete('/api/session', (req, res) => {
     } else {
         res.status(404).json({ 
             error: 'No session found',
-            code: 'SESSION_NOT_FOUND'
+            code: ErrorCodes.SESSION_NOT_FOUND
         });
     }
 });
@@ -317,7 +317,7 @@ app.post('/api/openai', validateInput, async (req, res) => {
     if (!req.session.id) {
         return res.status(401).json({ 
             error: 'No session found',
-            code: 'SESSION_REQUIRED'
+            code: ErrorCodes.SESSION_REQUIRED
         });
     }
 
@@ -383,7 +383,7 @@ app.post('/api/openai', validateInput, async (req, res) => {
         if (error.message.includes('Rate limit exceeded')) {
             return res.status(429).json({ 
                 error: error.message,
-                code: 'RATE_LIMIT_EXCEEDED',
+                code: ErrorCodes.RATE_LIMIT_EXCEEDED,
                 retryAfter: error.retryAfter || 60
             });
         }
@@ -391,9 +391,40 @@ app.post('/api/openai', validateInput, async (req, res) => {
         // Enhanced error response with request tracking
         res.status(error.statusCode || 500).json({ 
             error: error.message,
-            code: error.code || 'INTERNAL_ERROR',
+            code: error.code || ErrorCodes.INTERNAL_ERROR,
             requestId: req.id,
             timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Message history endpoint with pagination
+app.get('/api/messages', (req, res) => {
+    if (!req.session.id) {
+        return res.status(401).json({ 
+            error: 'No session found',
+            code: ErrorCodes.SESSION_REQUIRED
+        });
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 20, 50); // Max 50 messages per request
+    const sessionId = req.session.id;
+
+    try {
+        // Get messages for this session from openaiService
+        const history = openaiService.getSessionHistory(sessionId, page, limit);
+        
+        res.json({
+            messages: history.messages,
+            hasMore: history.hasMore,
+            currentPage: page
+        });
+    } catch (error) {
+        console.error('Failed to fetch message history:', error);
+        res.status(500).json({
+            error: 'Failed to fetch message history',
+            code: ErrorCodes.HISTORY_FETCH_ERROR
         });
     }
 });

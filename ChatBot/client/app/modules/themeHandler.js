@@ -166,8 +166,18 @@ export class ThemeHandler {
                 detail: { isDarkMode }
             }));
         } catch (error) {
-            console.error('Error toggling theme:', error);
-            this.showThemeError();
+            // Create error object with appropriate code
+            const themeError = {
+                code: error.name === 'QuotaExceededError' ? 'STORAGE_ERROR' :
+                      error.name === 'SecurityError' ? 'CONFIG_ERROR' :
+                      error.name === 'NetworkError' ? 'NETWORK_ERROR' :
+                      'CONFIG_ERROR',
+                message: error.message,
+                cause: error
+            };
+            
+            console.error('Error toggling theme:', themeError);
+            this.showThemeError(themeError);
         }
     }
 

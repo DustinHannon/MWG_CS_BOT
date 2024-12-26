@@ -213,34 +213,72 @@ export class FormHandler {
      * @param {string} question - Original question for retry
      */
     async handleError(error, question) {
-        console.error('Error:', error);
+        console.error('Form Error:', error);
         this.chatUI.removeTypingIndicator();
 
-        // Handle rate limiting
-        if (error.status === 429) {
-            const retryAfter = error.headers?.get('Retry-After') || 60;
-            this.chatUI.addErrorMessage(`Rate limit exceeded. Please try again in ${retryAfter} seconds.`);
-            return;
-        }
-
-        // Attempt retry with exponential backoff
-        if (this.shouldRetry(error) && this.retryCount < this.maxRetries) {
-            this.retryCount++;
-            this.retryDelay = Math.min(this.retryDelay * 2, this.maxRetryDelay);
+        try {
+            // Parse error response if it's a server error
+            const errorData = error.response ? await error.response.json() : null;
             
-            this.chatUI.addErrorMessage(
-                `Request failed. Retrying in ${this.retryDelay/1000} seconds... (Attempt ${this.retryCount}/${this.maxRetries})`
-            );
-            
-            await new Promise(resolve => setTimeout(resolve, this.retryDelay));
-            return this.handleSubmit(question);
-        }
+            // Handle rate limiting
+            if (error.status === 429 || errorData?.code === 'RATE_LIMIT_EXCEEDED') {
+                const retryAfter = error.headers?.get('Retry-After') || errorData?.retryAfter || 60;
+                this.chatUI.addErrorMessage({
+                    error: `Rate limit exceeded. Please try again in ${retryAfter} seconds.`,
+                    code: 'RATE_LIMIT_EXCEEDED',
+                    retryAfter
+                });
+                return;
+            }
 
-        // Show appropriate error message
-        const errorMessage = this.getErrorMessage(error);
-        this.chatUI.addErrorMessage(errorMessage);
-        this.form.classList.add('error');
-        this.errorMessage.textContent = errorMessage;
+            // Attempt retry with exponential backoff for certain errors
+            if (this.shouldRetry(error) && this.retryCount < this.maxRetries) {
+                this.retryCount++;
+                this.retryDelay = Math.min(this.retryDelay * 2, this.maxRetryDelay);
+                
+                this.chatUI.addErrorMessage({
+                    error: `Request failed. Retrying in ${this.retryDelay/1000} seconds... (Attempt ${this.retryCount}/${this.maxRetries})`,
+                    code: errorData?.code || 'NETWORK_ERROR',
+                    requestId: errorData?.requestId,
+                    timestamp: errorData?.timestamp
+                });
+                
+                await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+                return this.handleSubmit(question);
+            }
+
+            // Show appropriate error message
+            const errorResponse = {
+                error: errorData?.error || this.getErrorMessage(error),
+                code: errorData?.code || error.code || 'INTERNAL_ERROR',
+                requestId: errorData?.requestId,
+                timestamp: errorData?.timestamp || new Date().toISOString()
+            };
+
+            // Display error in chat and form
+            this.chatUI.addErrorMessage(errorResponse);
+            this.form.classList.add('error');
+            this.errorMessage.textContent = errorResponse.error;
+
+            // Log detailed error for debugging
+            console.error('Request Failed:', {
+                error: errorResponse,
+                originalError: error,
+                requestDetails: {
+                    question,
+                    retryCount: this.retryCount,
+                    timestamp: new Date().toISOString()
+                }
+            });
+        } catch (parseError) {
+            // Handle error parsing failure
+            console.error('Error parsing error response:', parseError);
+            this.chatUI.addErrorMessage({
+                error: 'An unexpected error occurred. Please try again.',
+                code: 'INTERNAL_ERROR',
+                timestamp: new Date().toISOString()
+            });
+        }
     }
 
     /**
@@ -259,10 +297,86 @@ export class FormHandler {
      * @returns {string} User-friendly error message
      */
     getErrorMessage(error) {
+        // Handle timeout errors
         if (error.name === 'AbortError') {
             return 'Request timed out. Please try again.';
         }
 
+        // If we have an error code from the server, use it to get the message
+        if (error.response?.data?.code) {
+            switch (error.response.data.code) {
+                // Server errors
+                case 'INTERNAL_ERROR':
+                    return 'An unexpected error occurred. Please try again later.';
+                case 'DATABASE_ERROR':
+                    return 'A database error occurred. Please try again later.';
+                case 'API_ERROR':
+                    return 'An API error occurred. Please try again later.';
+                case 'SERVICE_UNAVAILABLE':
+                    return 'The service is temporarily unavailable.';
+                case 'CONFIG_ERROR':
+                    return 'Configuration error. Please contact support.';
+                
+                // Client errors
+                case 'BAD_REQUEST':
+                    return 'The request could not be processed.';
+                case 'UNAUTHORIZED':
+                    return 'Please log in to continue.';
+                case 'FORBIDDEN':
+                    return 'You do not have permission to perform this action.';
+                case 'NOT_FOUND':
+                    return 'The requested resource was not found.';
+                case 'VALIDATION_ERROR':
+                    return 'The provided data is invalid.';
+                case 'RATE_LIMIT_EXCEEDED':
+                    return 'Too many requests. Please try again later.';
+                
+                // Network/Communication errors
+                case 'NETWORK_ERROR':
+                    return 'A network error occurred. Please check your connection.';
+                case 'TIMEOUT':
+                    return 'The request timed out. Please try again.';
+                
+                // Authentication/Authorization errors
+                case 'AUTH_ERROR':
+                    return 'Authentication failed.';
+                case 'TOKEN_EXPIRED':
+                    return 'Your session has expired. Please log in again.';
+                case 'INVALID_TOKEN':
+                    return 'Invalid authentication token.';
+                
+                // Input/Validation errors
+                case 'INVALID_INPUT':
+                    return 'The provided input is invalid.';
+                case 'MISSING_FIELD':
+                    return 'Required field is missing.';
+                case 'INVALID_FORMAT':
+                    return 'Invalid data format.';
+                
+                // OpenAI specific errors
+                case 'OPENAI_API_ERROR':
+                    return 'Error communicating with AI service.';
+                case 'OPENAI_RATE_LIMIT':
+                    return 'AI service rate limit exceeded.';
+                case 'OPENAI_CONTEXT_LENGTH':
+                    return 'Input exceeds maximum length.';
+                
+                // Session/State errors
+                case 'SESSION_ERROR':
+                    return 'Session error. Please try logging in again.';
+                case 'SESSION_EXPIRED':
+                    return 'Your session has expired. Please refresh.';
+                case 'SESSION_INVALID':
+                    return 'Invalid session. Please refresh.';
+                case 'SESSION_REQUIRED':
+                    return 'Session required. Please refresh.';
+                
+                default:
+                    return 'An unexpected error occurred. Please try again.';
+            }
+        }
+
+        // Fallback to HTTP status codes if no error code is provided
         switch (error.status) {
             case 400:
                 return 'Invalid request. Please check your input.';

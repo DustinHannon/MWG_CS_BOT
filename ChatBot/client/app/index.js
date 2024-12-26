@@ -183,7 +183,15 @@ class ChatApplication {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to initialize session');
+                throw new Error('Failed to initialize session', {
+                    cause: {
+                        code: response.status === 429 ? 'RATE_LIMIT_EXCEEDED' :
+                              response.status === 401 ? 'SESSION_EXPIRED' :
+                              response.status === 503 ? 'SERVICE_UNAVAILABLE' :
+                              'SESSION_ERROR',
+                        status: response.status
+                    }
+                });
             }
 
             const data = await response.json();

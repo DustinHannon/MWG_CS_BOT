@@ -21,7 +21,7 @@
  * - ../middleware/errorHandler.js: Error handling
  */
 
-import { APIError } from '../middleware/errorHandler.js';
+import { APIError, ErrorCodes } from '../middleware/errorHandler.js';
 import { createHash } from 'crypto';
 
 /**
@@ -188,11 +188,11 @@ class OpenAIService {
             console.warn(`Rate limit exceeded for session ${sessionId}. ` +
                         `Requests: ${rateLimit.requests}/${maxRequests}`);
                         
-            throw new APIError(
-                `Rate limit exceeded. Please wait ${waitTime} seconds. ` +
-                `Reset at ${resetTime.toISOString()}`,
-                429,
-                'RATE_LIMIT_EXCEEDED',
+                throw new APIError(
+                    `Rate limit exceeded. Please wait ${waitTime} seconds. ` +
+                    `Reset at ${resetTime.toISOString()}`,
+                    429,
+                    ErrorCodes.RATE_LIMIT_EXCEEDED,
                 {
                     resetTime: resetTime.toISOString(),
                     waitTime,
@@ -210,10 +210,10 @@ class OpenAIService {
             console.warn(`Token limit exceeded for session ${sessionId}. ` +
                         `Tokens: ${rateLimit.totalTokens}/${maxTokens}`);
                         
-            throw new APIError(
-                `Token limit exceeded. Please wait ${waitTime} seconds.`,
-                429,
-                'TOKEN_LIMIT_EXCEEDED',
+                throw new APIError(
+                    `Token limit exceeded. Please wait ${waitTime} seconds.`,
+                    429,
+                    ErrorCodes.OPENAI_RATE_LIMIT,
                 {
                     resetTime: resetTime.toISOString(),
                     waitTime,
@@ -467,7 +467,7 @@ class OpenAIService {
             throw new APIError(
                 `IP rate limit exceeded. Please wait ${waitTime} seconds.`,
                 429,
-                'IP_RATE_LIMIT_EXCEEDED',
+                ErrorCodes.RATE_LIMIT_EXCEEDED,
                 {
                     resetTime: resetTime.toISOString(),
                     waitTime,
@@ -487,7 +487,7 @@ class OpenAIService {
             throw new APIError(
                 `IP token limit exceeded. Please wait ${waitTime} seconds.`,
                 429,
-                'IP_TOKEN_LIMIT_EXCEEDED',
+                ErrorCodes.OPENAI_RATE_LIMIT,
                 {
                     resetTime: resetTime.toISOString(),
                     waitTime,
@@ -537,6 +537,9 @@ class OpenAIService {
                 this.checkIPRateLimit(ip);
             }
 
+            // Store user message in history
+            this.storeMessage(sessionId, prompt, 'user');
+
             // Check cache
             const cachedResponse = this.getCachedResponse(prompt, sessionId);
             if (cachedResponse) {
@@ -544,6 +547,8 @@ class OpenAIService {
                 if (ip) {
                     this.updateIPRateLimit(ip, sessionId, 0);
                 }
+                // Store bot response in history
+                this.storeMessage(sessionId, cachedResponse, 'bot');
                 return cachedResponse;
             }
 
@@ -575,7 +580,7 @@ class OpenAIService {
                 throw new APIError(
                     errorData.error?.message || 'OpenAI API request failed',
                     response.status,
-                    'OPENAI_API_ERROR',
+                    ErrorCodes.OPENAI_API_ERROR,
                     errorData
                 );
             }
@@ -594,6 +599,9 @@ class OpenAIService {
             // Cache the response
             this.setCachedResponse(prompt, sessionId, generatedResponse);
 
+            // Store bot response in history
+            this.storeMessage(sessionId, generatedResponse, 'bot');
+
             return generatedResponse;
 
         } catch (error) {
@@ -606,7 +614,7 @@ class OpenAIService {
             throw new APIError(
                 'Failed to generate response',
                 500,
-                'OPENAI_SERVICE_ERROR',
+                ErrorCodes.OPENAI_API_ERROR,
                 { originalError: error.message }
             );
         }
