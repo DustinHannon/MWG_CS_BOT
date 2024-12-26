@@ -51,17 +51,46 @@ const config = {
     
     // Security settings
     // CORS (Cross-Origin Resource Sharing) configuration
+    // This configuration protects against unauthorized cross-origin requests
+    // by explicitly defining which domains can interact with our API
     cors: {
-        origin: '*',                    // Allow all origins (customize in production)
-        methods: ['GET', 'POST'],       // Allowed HTTP methods
-        allowedHeaders: ['Content-Type'] // Allowed request headers
+        // Origin configuration - SECURITY CRITICAL
+        // Instead of allowing all origins ('*'), we explicitly list trusted domains
+        // This prevents malicious websites from making unauthorized requests to our API
+        origin: [
+            'https://morganwhite.com',        // Main Morgan White Group domain
+            'https://*.morganwhite.com'       // All Morgan White Group subdomains
+        ],
+
+        // HTTP Methods - Principle of Least Privilege
+        // Only allow the specific HTTP methods needed for the application
+        // This prevents potential abuse through unauthorized HTTP methods
+        methods: ['GET', 'POST'],
+
+        // Allowed Headers - Minimal Surface Area
+        // Restrict which headers can be used in requests
+        // Only allow essential headers to minimize attack surface
+        allowedHeaders: ['Content-Type'],
+
+        // Credentials - Secure Cookie Handling
+        // Enable secure handling of cookies and authorization headers
+        // Required for maintaining authenticated sessions and secure data transfer
+        credentials: true
     },
     
     // Rate limiting configuration
-    // Prevents abuse by limiting request frequency
+    // This configuration protects the API from abuse by implementing request frequency limits
+    // It uses a sliding window approach where each IP address is tracked independently
+    // When the limit is reached, subsequent requests will receive a 429 (Too Many Requests) response
     rateLimit: {
-        windowMs: 15 * 60 * 1000,      // 15 minute window
-        max: 100                        // 100 requests per window per IP
+        windowMs: 15 * 60 * 1000,      // Time window in milliseconds (15 minutes)
+                                       // The window "slides" forward with time, creating a rolling time period
+                                       // Example: If it's 2:00 PM, it counts requests from 1:45 PM to 2:00 PM
+        
+        max: 100                        // Maximum number of requests allowed per IP within the time window
+                                       // Once an IP reaches this limit, they must wait until their oldest
+                                       // request "ages out" of the current time window before making new requests
+                                       // This prevents any single IP from overwhelming the server with requests
     },
     
     // Content Security Policy (CSP) configuration
