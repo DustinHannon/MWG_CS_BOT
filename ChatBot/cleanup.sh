@@ -12,7 +12,6 @@ remove_if_exists() {
 }
 
 echo "Removing known unused files..."
-# Remove only truly unused files
 remove_if_exists "client/offline.html"
 remove_if_exists "cleanup-azure.ps1"
 
