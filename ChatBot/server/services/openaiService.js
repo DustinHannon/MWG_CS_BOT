@@ -81,12 +81,12 @@ class OpenAIService {
                 ]);
 
                 this.fetch = fetch;
-                this.apiKey = config.openaiApiKey;
-                this.model = config.openai?.model || 'gpt-3.5-turbo';
-                this.maxTokens = config.openai?.maxTokens || 1000;
-                this.temperature = config.openai?.temperature || 0.7;
-                this.cacheDuration = config.openai?.cacheDuration || 3600000; // 1 hour
-                this.requestDelay = config.openai?.requestDelay || 1000; // 1 second between requests
+                this.apiKey = config.azureAiKey;
+                this.deployment = config.ai?.deployment || 'gpt-5.4';
+                this.maxTokens = config.ai?.maxTokens || 1000;
+                this.temperature = config.ai?.temperature || 0.7;
+                this.cacheDuration = config.ai?.cacheDuration || 3600000; // 1 hour
+                this.requestDelay = config.ai?.requestDelay || 1000; // 1 second between requests
                 this.enrichUserPromptWithContext = enrichUserPromptWithContext;
 
                 this.initialized = true;
@@ -569,15 +569,16 @@ class OpenAIService {
             // Enrich the prompt with context
             const enrichedPrompt = this.enrichUserPromptWithContext(prompt);
 
-            // Make API request
-            const response = await this.fetch('https://api.openai.com/v1/chat/completions', {
+            // Make API request to Azure AI Foundry
+            const apiUrl = `https://AZ-UTIL-AI.openai.azure.com/openai/v1/chat/completions`;
+            const response = await this.fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${this.apiKey}`,
                 },
                 body: JSON.stringify({
-                    model: this.model,
+                    model: this.deployment,
                     messages: [{ role: 'user', content: enrichedPrompt }],
                     max_tokens: this.maxTokens,
                     temperature: this.temperature,
