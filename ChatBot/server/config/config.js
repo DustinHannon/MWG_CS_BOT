@@ -6,13 +6,13 @@
  * 
  * Configuration categories:
  * - Server settings (port, environment)
- * - API keys (OpenAI)
+ * - API keys (Azure AI Foundry)
  * - Security settings (CORS, CSP)
  * - Rate limiting
- * - OpenAI specific settings
- * 
+ * - Azure AI model settings
+ *
  * Environment Variables Required:
- * - OPENAI_API_KEY: API key for OpenAI services
+ * - AZURE_AI_KEY: API key for Azure AI Foundry
  * 
  * Optional Environment Variables:
  * - PORT: Server port (default: 8080)
@@ -48,7 +48,7 @@ const config = {
     
     // API Keys
     // Sensitive credentials loaded from environment variables
-    openaiApiKey: process.env.OPENAI_API_KEY,         // OpenAI API key
+    azureAiKey: process.env.AZURE_AI_KEY,             // Azure AI Foundry API key
     
     // Security settings
     // CORS (Cross-Origin Resource Sharing) configuration
@@ -121,7 +121,7 @@ const config = {
             // Connection sources for fetch, WebSocket, etc.
             connectSrc: [
                 "'self'",
-                "https://api.openai.com",
+                "https://az-util-ai.openai.azure.com",
                 "https://morganwhite.com",
                 "https://*.morganwhite.com",
                 "https://insuranceforeveryone.com",
@@ -152,11 +152,11 @@ const config = {
         }
     },
     
-    // OpenAI API configuration
-    // Settings for the ChatGPT integration
-    openai: {
-        model: 'gpt-3.5-turbo', // GPT model to use
-        maxTokens: 1000         // Maximum tokens per response
+    // Azure AI Foundry configuration
+    // Settings for the chat model integration
+    ai: {
+        deployment: process.env.AZURE_AI_DEPLOYMENT || 'gpt-5.4',
+        maxTokens: 1000
     }
 };
 
@@ -169,7 +169,7 @@ const config = {
  */
 const validateConfig = () => {
     // List of required environment variables
-    const requiredVars = ['openaiApiKey'];
+    const requiredVars = ['azureAiKey'];
     
     // Check for missing required variables
     const missingVars = requiredVars.filter(varName => !config[varName]);
@@ -214,13 +214,13 @@ const validateConfig = () => {
         );
     }
 
-    // Validate OpenAI settings
-    if (!config.openai.model || !config.openai.maxTokens || config.openai.maxTokens < 0) {
+    // Validate AI settings
+    if (!config.ai.deployment || !config.ai.maxTokens || config.ai.maxTokens < 0) {
         throw new APIError(
-            'Invalid OpenAI configuration',
+            'Invalid AI configuration',
             500,
             ErrorCodes.CONFIG_ERROR,
-            { openai: config.openai }
+            { ai: config.ai }
         );
     }
     
