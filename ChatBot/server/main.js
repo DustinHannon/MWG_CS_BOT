@@ -95,8 +95,9 @@ app.use(cors({
     exposedHeaders: ['Content-Length', 'X-Request-Id']
 }));
 
-// Session secret generation using cryptographically secure random value
-const sessionSecret = crypto.randomBytes(32).toString('hex');
+// Session secret - use environment variable for consistent sessions across serverless instances.
+// Falls back to random value for local development.
+const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 
 // Session configuration for user state management
 app.use(session({
@@ -162,21 +163,23 @@ app.use('/api/', limiter); // Apply rate limiting to API routes
 app.use(securityMiddleware);
 
 // Static file serving configuration
-app.use(express.static(path.join(__dirname, '../client'), {
-    etag: true,
-    lastModified: true,
-    setHeaders: (res, path) => {
-        // Set correct MIME types and caching headers
-        if (path.endsWith('.css')) {
-            res.setHeader('Content-Type', 'text/css');
+// On Vercel, static files are served from public/ by the CDN.
+// express.static() is only used for local development.
+if (!process.env.VERCEL) {
+    app.use(express.static(path.join(__dirname, '../client'), {
+        etag: true,
+        lastModified: true,
+        setHeaders: (res, filePath) => {
+            if (filePath.endsWith('.css')) {
+                res.setHeader('Content-Type', 'text/css');
+            }
+            if (filePath.endsWith('.js')) {
+                res.setHeader('Content-Type', 'application/javascript');
+            }
+            res.setHeader('Cache-Control', 'public, max-age=86400');
         }
-        if (path.endsWith('.js')) {
-            res.setHeader('Content-Type', 'application/javascript');
-        }
-        // Cache static assets for 1 day
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-    }
-}));
+    }));
+}
 
 // Health check endpoint for monitoring
 app.get('/health', (req, res) => {
@@ -429,56 +432,60 @@ app.get('/api/messages', (req, res) => {
     }
 });
 
-// Service worker route for PWA support
-app.get('/service-worker.js', (req, res) => {
-    res.setHeader('Service-Worker-Allowed', '/');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.sendFile(path.join(__dirname, '../client/service-worker.js'));
-});
+// Service worker and SPA fallback routes - only needed for local development.
+// On Vercel, static files and SPA fallback are handled by the CDN/public directory.
+if (!process.env.VERCEL) {
+    app.get('/service-worker.js', (req, res) => {
+        res.setHeader('Service-Worker-Allowed', '/');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.sendFile(path.join(__dirname, '../client/service-worker.js'));
+    });
 
-// SPA fallback route for client-side routing
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/index.html'));
-});
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../client/index.html'));
+    });
+}
 
 // Error handling middleware
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Server initialization
-const server = app.listen(config.port, () => {
-    console.log(`Server is running on port ${config.port}`);
-    console.log(`Environment: ${config.nodeEnv}`);
-    console.log('Using in-memory session store');
-}).on('error', (error) => {
-    console.error('Server failed to start:', error);
-    process.exit(1);
-});
+// Export the Express app for Vercel serverless deployment
+export default app;
 
-// Graceful shutdown handling
-process.on('SIGTERM', () => {
-    console.log('SIGTERM received. Performing graceful shutdown...');
-    server.close(() => {
-        console.log('Server closed. Exiting process.');
-        process.exit(0);
-    });
-});
-
-// Global error handling
-process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', error);
-    // Attempt graceful shutdown
-    server.close(() => {
+// Only start the server when running locally (not on Vercel)
+if (!process.env.VERCEL) {
+    const server = app.listen(config.port, () => {
+        console.log(`Server is running on port ${config.port}`);
+        console.log(`Environment: ${config.nodeEnv}`);
+        console.log('Using in-memory session store');
+    }).on('error', (error) => {
+        console.error('Server failed to start:', error);
         process.exit(1);
     });
-    // Force shutdown after 30 seconds
-    setTimeout(() => {
-        process.exit(1);
-    }, 30000);
-});
 
-// Unhandled promise rejection handling
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    // Log but don't exit for unhandled rejections
-});
+    // Graceful shutdown handling
+    process.on('SIGTERM', () => {
+        console.log('SIGTERM received. Performing graceful shutdown...');
+        server.close(() => {
+            console.log('Server closed. Exiting process.');
+            process.exit(0);
+        });
+    });
+
+    // Global error handling
+    process.on('uncaughtException', (error) => {
+        console.error('Uncaught Exception:', error);
+        server.close(() => {
+            process.exit(1);
+        });
+        setTimeout(() => {
+            process.exit(1);
+        }, 30000);
+    });
+
+    // Unhandled promise rejection handling
+    process.on('unhandledRejection', (reason, promise) => {
+        console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    });
+}

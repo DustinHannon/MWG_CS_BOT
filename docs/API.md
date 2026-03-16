@@ -5,8 +5,8 @@ The MWG CS BOT API provides endpoints for chat functionality using OpenAI's lang
 
 ## Base URL
 ```
-Production: https://mwgcsbot-apdcavd6ameddtdb.southcentralus-01.azurewebsites.net/api
-Local: http://localhost:3000/api
+Production: https://<your-vercel-project>.vercel.app/api
+Local: http://localhost:8080/api
 ```
 
 ## Authentication
@@ -14,7 +14,25 @@ All API requests require session-based authentication. Sessions are managed thro
 
 ## Endpoints
 
-### POST /openai
+### POST /api/session
+Create or retrieve a session. Sets a secure HTTP-only cookie for subsequent requests.
+
+#### Response
+```json
+{
+  "sessionId": string,
+  "created": number,
+  "fingerprint": string
+}
+```
+
+### DELETE /api/session
+Destroy the current session and clear associated data.
+
+#### Response
+Status 204 (No Content) on success.
+
+### POST /api/openai
 Send a chat message and receive an AI-generated response.
 
 #### Request
@@ -27,8 +45,7 @@ Send a chat message and receive an AI-generated response.
 #### Response
 ```json
 {
-  "data": string,    // AI-generated response
-  "requestId": string,  // Unique request identifier
+  "data": string,       // AI-generated response
   "timestamp": string   // ISO 8601 timestamp
 }
 ```
@@ -43,7 +60,7 @@ Send a chat message and receive an AI-generated response.
 }
 ```
 
-### GET /messages
+### GET /api/messages
 Retrieve chat history with pagination.
 
 #### Query Parameters
@@ -66,6 +83,22 @@ Retrieve chat history with pagination.
 }
 ```
 
+### GET /health
+Health check endpoint for monitoring.
+
+#### Response
+```json
+{
+  "status": "healthy",
+  "timestamp": string,
+  "port": number,
+  "env": string,
+  "sessionStore": "memory",
+  "uptime": number,
+  "memory": object
+}
+```
+
 ## Rate Limits
 
 ### Session-based Limits
@@ -76,16 +109,18 @@ Retrieve chat history with pagination.
 - 100 requests per hour per IP
 - 200,000 tokens per hour per IP
 
+### Express Rate Limiter
+- 100 requests per 15-minute window per IP (applies to all /api/ routes)
+
 Rate limit responses include:
 - Status code: 429
-- Retry-After header: Seconds until limit resets
 - Error code: RATE_LIMIT_EXCEEDED
+- retryAfter: Seconds until limit resets
 
 ## Error Codes
 
 ### Server Errors (500 range)
 - INTERNAL_ERROR: Unexpected server error
-- DATABASE_ERROR: Database operation failed
 - API_ERROR: Generic API error
 - SERVICE_UNAVAILABLE: Service temporarily down
 - CONFIG_ERROR: Server configuration error
@@ -97,15 +132,6 @@ Rate limit responses include:
 - NOT_FOUND: Resource not found
 - VALIDATION_ERROR: Invalid input data
 - RATE_LIMIT_EXCEEDED: Rate limit reached
-
-### Network/Communication Errors
-- NETWORK_ERROR: Connection failed
-- TIMEOUT: Request timeout
-
-### Authentication Errors
-- AUTH_ERROR: Authentication failed
-- TOKEN_EXPIRED: Session expired
-- INVALID_TOKEN: Invalid auth token
 
 ### Input/Validation Errors
 - INVALID_INPUT: Invalid input format
@@ -122,10 +148,16 @@ Rate limit responses include:
 - SESSION_EXPIRED: Session timeout
 - SESSION_INVALID: Invalid session
 - SESSION_REQUIRED: No session found
+- SESSION_CREATE_ERROR: Failed to create session
+- SESSION_SAVE_ERROR: Failed to save session
+- SESSION_DESTROY_ERROR: Failed to destroy session
 
 ## Response Headers
 All responses include:
 - X-Request-ID: Unique request identifier
-- X-RateLimit-Limit: Request limit per hour
-- X-RateLimit-Remaining: Remaining requests
-- X-RateLimit-Reset: Timestamp when limit resets
+- Security headers via Helmet (HSTS, X-Frame-Options, X-Content-Type-Options, etc.)
+
+## Deployment Notes
+- The API runs as a Vercel serverless function via `api/index.js`
+- In-memory session and rate limit stores are ephemeral across serverless instances
+- `SESSION_SECRET` environment variable is required for consistent session cookies

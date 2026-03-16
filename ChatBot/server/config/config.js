@@ -60,7 +60,8 @@ const config = {
         // This prevents malicious websites from making unauthorized requests to our API
         origin: [
             'https://morganwhite.com',        // Main Morgan White Group domain
-            'https://*.morganwhite.com'       // All Morgan White Group subdomains
+            'https://*.morganwhite.com',      // All Morgan White Group subdomains
+            'https://*.vercel.app'            // Vercel deployment domains
         ],
 
         // HTTP Methods - Principle of Least Privilege
@@ -105,7 +106,7 @@ const config = {
             scriptSrc: ["'self'", "'unsafe-inline'"],
             
             // CSS sources
-            styleSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             
             // Image sources
             imgSrc: [
@@ -113,7 +114,8 @@ const config = {
                 "data:",
                 "blob:",
                 "https://morganwhite.com",
-                "https://*.morganwhite.com"
+                "https://*.morganwhite.com",
+                "https://*.vercel.app"
             ],
             
             // Connection sources for fetch, WebSocket, etc.
@@ -123,11 +125,12 @@ const config = {
                 "https://morganwhite.com",
                 "https://*.morganwhite.com",
                 "https://insuranceforeveryone.com",
-                "https://www.linkedin.com"
+                "https://www.linkedin.com",
+                "https://*.vercel.app"
             ],
             
             // Font sources
-            fontSrc: ["'self'", "data:"],
+            fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
             
             // Object sources (plugins)
             objectSrc: ["'none'"],
