@@ -580,7 +580,7 @@ class OpenAIService {
                 body: JSON.stringify({
                     model: this.deployment,
                     messages: [{ role: 'user', content: enrichedPrompt }],
-                    max_tokens: this.maxTokens,
+                    max_completion_tokens: this.maxTokens,
                     temperature: this.temperature,
                     presence_penalty: 0.6,
                     frequency_penalty: 0.5
