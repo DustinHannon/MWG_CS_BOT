@@ -3,207 +3,209 @@
 ## System Overview
 MWG CS BOT is a client-server application that provides AI-powered customer service chat functionality. The system uses OpenAI's language models to generate contextually relevant responses to customer inquiries, implementing security measures, caching mechanisms, and error handling.
 
+The application is deployed on Vercel with the Express API running as a serverless function and static files served via Vercel's CDN.
+
 ## Architecture Diagram
 ```
-┌─────────────────┐     ┌──────────────┐     ┌─────────────┐
-│   Web Client    │────▶│  Web Server  │────▶│  OpenAI API │
-│  (JavaScript)   │◀────│   (Node.js)  │◀────│             │
-└─────────────────┘     └──────────────┘     └─────────────┘
-        │                      │
-        │                      │
-┌───────────────┐    ┌─────────────────┐
-│Service Worker │    │ Memory Storage  │
-│(Static Cache) │    │ - Sessions     │
-└───────────────┘    │ - Rate Limits  │
+┌─────────────────┐     ┌────────────────────┐     ┌─────────────┐
+│   Web Client    │────▶│  Vercel Serverless  │────▶│  OpenAI API │
+│  (JavaScript)   │◀────│  Function (Express) │◀────│             │
+└─────────────────┘     └────────────────────┘     └─────────────┘
+        │                        │
+        │                        │
+┌───────────────┐    ┌─────────────────┐    ┌────────────────┐
+│Service Worker │    │ Memory Storage  │    │  Vercel CDN    │
+│(Static Cache) │    │ - Sessions      │    │ (Static Files) │
+└───────────────┘    │ - Rate Limits   │    └────────────────┘
                      │ - Response Cache│
                      └─────────────────┘
 ```
+
+## Deployment Architecture
+
+### Vercel Configuration
+- **Entry point:** `api/index.js` re-exports the Express app from `ChatBot/server/main.js`
+- **Static files:** `ChatBot/client/` is copied to `public/` at build time via `vercel.json` buildCommand
+- **Routing:** `vercel.json` rewrites `/api/*` and `/health` to the serverless function
+- **All other routes** are served as static files from the CDN
+
+### Key Vercel Adaptations
+- `express.static()` is disabled on Vercel (wrapped in `if (!process.env.VERCEL)`)
+- `app.listen()` is disabled on Vercel (Express app is exported for serverless runtime)
+- Service worker route and SPA fallback are local-dev only
+- Session secret uses `SESSION_SECRET` env var for consistency across serverless instances
 
 ## Components
 
 ### 1. Client-Side Components
 
-#### Main Application (index.js)
+#### Main Application (client/app/index.js)
 - Initializes client-side modules
 - Handles module dependencies
-- Basic service worker registration
-- Basic global error handling
-- Basic online/offline status detection
+- Service worker registration
+- Global error handling
+- Online/offline status detection
 - Manages session initialization
 - Provides update notifications
 
-#### Chat UI Module (chatUI.js)
-- Manages message display and animations
-- Handles sequential message processing
-- Implements message history loading
-- Provides copy functionality
-- Basic ARIA attributes for error messages
+#### Chat UI Module (client/app/modules/chatUI.js)
+- Manages message display and queue-based processing
+- Implements message history lazy loading with pagination
+- Provides copy functionality for bot messages
+- ARIA attributes for accessibility
 - Manages scroll behavior
-- Handles error display
-- Basic markdown and link formatting
+- Handles error display with retry buttons
+- Markdown and link formatting
 
-#### Form Handler Module (formHandler.js)
+#### Form Handler Module (client/app/modules/formHandler.js)
 - Manages form submissions and validation
-- Basic client-side error handling
-- Basic retry logic with backoff
-- Performs input validation and sanitization
-- Handles keyboard shortcuts and paste events
-- Manages textarea auto-resizing
+- Client-side input sanitization (XSS patterns, zero-width chars)
+- Retry logic with exponential backoff (max 3 retries)
+- Keyboard shortcuts (Enter to send, Shift+Enter for newline, Escape to clear)
+- Paste event sanitization
+- Textarea auto-resizing
 
-#### Theme Handler Module (themeHandler.js)
-- Manages light/dark theme switching
+#### Theme Handler Module (client/app/modules/themeHandler.js)
+- Light/dark theme switching with smooth transitions
 - Persists theme preference in localStorage
-- Syncs with system color scheme
-- Updates mobile browser theme color
-- Basic keyboard support for toggle
-- Basic error handling
+- Syncs with system color scheme preference
+- Updates mobile browser theme color meta tag
+- Keyboard accessible toggle
 
 ### 2. Server-Side Components
 
-#### Main Server (main.js)
+#### Main Server (server/main.js)
 - Express.js server configuration
+- Exports app for Vercel serverless deployment
 - Security middleware setup (helmet, CORS)
-- Session management
-- Rate limiting implementation
-- Static file serving
+- Session management with env-based secret
+- Rate limiting (100 req/15min per IP on all /api/ routes)
+- Static file serving (local dev only)
 - API endpoint definitions
-- Basic error handling
-- Basic health check endpoint
+- Health check endpoint
+- Graceful shutdown handling (local dev only)
 
-#### OpenAI Service (openaiService.js)
-- Manages OpenAI API communication
-- Implements in-memory response caching
-- Handles dual-layer rate limiting (session & IP-based)
-- Manages session data and history
-- Basic error handling with retries
-- Implements request throttling
-- Tracks token usage
-- Performs automatic cache cleanup
+#### OpenAI Service (server/services/openaiService.js)
+- Manages OpenAI API communication via node-fetch
+- In-memory response caching (SHA-256 key: session + prompt, 1-hour TTL)
+- Dual-layer rate limiting:
+  - Session: 50 req/hr, 100K tokens/hr
+  - IP: 100 req/hr, 200K tokens/hr
+- Request throttling (1s delay between requests per session)
+- Session data and message history storage
+- Automatic cleanup of expired sessions (2-hour expiry)
+- Token usage tracking
 
-#### Security Middleware (security.js)
-- Implements security headers
-- Manages CORS policies
-- Basic input validation
-- Basic request sanitization
-- Implements session fingerprinting
+#### Security Middleware (server/middleware/security.js)
+- Security headers (HSTS, X-Frame-Options, X-XSS-Protection, etc.)
+- Permissions Policy (restricts browser features)
+- Request ID generation (SHA-256 hash)
+- Input validation: XSS, SQL injection, command injection pattern detection
+- Unicode normalization and zero-width character removal
 
-#### Error Handler (errorHandler.js)
-- Centralizes error handling
-- Standardizes error responses
-- Provides error codes and messages
-- Basic console error logging
+#### Error Handler (server/middleware/errorHandler.js)
+- Centralized error handling middleware
+- APIError custom class with status codes and error codes
+- Client-safe error message mapping
+- Sensitive data redaction in logs (headers, body fields)
+- 404 handler with logging
+
+#### Configuration (server/config/config.js)
+- Environment variable loading via dotenv
+- CORS: morganwhite.com + vercel.app domains
+- CSP: self, Google Fonts, OpenAI API, MWG domains, Vercel domains
+- Rate limit settings
+- OpenAI model and token configuration
+- Config validation on startup
+
+#### Context Enrichment (server/utils.js)
+- Wraps user prompts with comprehensive MWG company context
+- Includes: company info, divisions, products, portals, contact details
+- Enforces response guidelines: no casual chat, no medical/legal advice, MWG-scope only
+- Prompt validation (type, length)
 
 ## Data Flow
 
-### 1. Message Submission Flow
+### Message Submission Flow
 ```
 1. User Input
-   └─▶ Client-side validation (formHandler.js)
-       └─▶ Security middleware validation
-           └─▶ Session validation
-               └─▶ Rate limit checks (IP & Session)
-                   └─▶ Cache check
-                       └─▶ OpenAI API request
-                           └─▶ Response processing
-                               └─▶ Cache update
-                                   └─▶ Client display
+   └─▶ Client-side validation & sanitization (formHandler.js)
+       └─▶ POST /api/openai
+           └─▶ Security middleware (headers, request ID)
+               └─▶ Input validation middleware (XSS, SQL, command injection)
+                   └─▶ Session validation
+                       └─▶ Rate limit checks (session + IP)
+                           └─▶ Cache check (SHA-256 key)
+                               └─▶ Request delay enforcement
+                                   └─▶ Context enrichment (utils.js)
+                                       └─▶ OpenAI API request
+                                           └─▶ Response caching
+                                               └─▶ Rate limit counter update
+                                                   └─▶ Client display
 ```
 
-### 2. Session Management Flow
+### Session Management Flow
 ```
-1. New Connection
-   └─▶ Session creation
-       └─▶ Session fingerprint generation
-           └─▶ IP address tracking
-               └─▶ Rate limit initialization
-                   └─▶ Last activity timestamp
-                       └─▶ Cleanup on timeout
+1. Page Load
+   └─▶ POST /api/session
+       └─▶ Session creation or retrieval
+           └─▶ Fingerprint generation (IP + UA + session ID)
+               └─▶ IP tracking
+                   └─▶ Cookie set (HTTP-only, secure, strict SameSite)
 ```
 
 ## Security Implementation
 
-### 1. Session Security
-- Session creation with fingerprinting
-- Basic IP tracking and validation
-- Session timeout handling
-- Last activity timestamp tracking
-- Automatic session cleanup
+### Session Security
+- Session creation with SHA-256 fingerprinting (IP + User-Agent + session ID)
+- IP tracking and change detection
+- HTTP-only, secure, strict SameSite cookies
+- 24-hour cookie max age
+- `SESSION_SECRET` environment variable for consistent signing across instances
 
-### 2. Rate Limiting
-- Dual-layer rate limiting:
-  * Session-based limits (requests & tokens)
-  * IP-based limits (shared across sessions)
-- Automatic cleanup of expired limits
-- Token usage tracking
-- Request throttling
+### Rate Limiting
+- Express-level: 100 requests per 15-minute window per IP
+- Service-level dual-layer:
+  - Session: 50 requests/hour, 100K tokens/hour
+  - IP: 100 requests/hour, 200K tokens/hour
+- Automatic cleanup of expired rate limit entries
 
-### 3. Request Security
+### Request Security
 - Helmet security headers
-- CORS configuration
-- Basic input validation
-- Basic request sanitization
-- Basic error sanitization
+- CORS restricted to known domains (morganwhite.com, vercel.app)
+- CSP with specific source allowlists
+- Input validation against XSS, SQL injection, command injection patterns
+- Unicode normalization and zero-width character stripping
+
+## Serverless Considerations
+
+### Ephemeral State
+In-memory stores (sessions, rate limits, response cache) do not persist across serverless function cold starts. This means:
+- Sessions may be lost on cold starts (user gets a new session)
+- Rate limits reset per instance (less strict in practice)
+- Response cache is per-instance (more API calls but still functional)
+
+### Mitigations
+- Vercel Fluid Compute keeps functions warm, reducing cold starts
+- `SESSION_SECRET` env var ensures cookies remain valid across instances
+- The application degrades gracefully - users simply get a new session
 
 ## Performance Optimizations
 
-### 1. Client-Side
-- Sequential message processing
-- Message history loading
-- Basic performance monitoring
-  * Long task detection
-  * Layout shift monitoring
-- Basic service worker registration
-- Basic static file caching
+### Client-Side
+- Message queue for sequential processing
+- Lazy loading message history with scroll-based pagination
+- PerformanceObserver monitoring (long tasks, layout shifts)
+- Service worker with multi-strategy caching (network-first, cache-first, stale-while-revalidate)
+- Debounced input handling (300ms)
 
-### 2. Server-Side
-- Response caching with time-based expiration
-- Request throttling through rate limits
-- Automatic session data cleanup
-- Basic static file serving with cache headers
+### Server-Side
+- In-memory response cache with 1-hour TTL and automatic cleanup
+- Request throttling (1s between requests per session)
+- Compression middleware (level 6)
+- JSON body size limit (10kb)
 
-### 3. Caching Strategy
-- In-memory response cache with automatic cleanup
-- Time-based cache invalidation
-- Session-specific response caching
-- Cache key generation with cryptographic hashing
-
-## Error Handling
-
-### 1. Client-Side
-- Basic global error catching
-- Basic unhandled rejection handling
-- Error message display in UI
-- Basic retry logic
-- Online/offline status handling
-
-### 2. Server-Side
-- Error response standardization
-- Basic error classification
-- Basic request tracking
-- Console-based error logging
-- Rate limit error handling
-
-## Development Guidelines
-
-### 1. Code Organization
-- Modular architecture
-- Clear separation of concerns
-- Consistent error handling
-- Code documentation with JSDoc comments
-
-### 2. Security Practices
-- Input validation
-- Session security
-- Rate limiting
-- Error sanitization
-
-### 3. Performance
-- Response caching with expiration
-- Session data cleanup
-- Rate limit management
-- Basic static file caching
-
-### 4. Development Tools
-- Console-based error logging
-- Basic performance monitoring (long tasks, layout shifts)
-- Development-mode debugging
+### Vercel-Specific
+- Static files served via Vercel CDN (not through Express)
+- Single serverless function for all API routes
+- Fluid Compute for optimal scaling and warm starts

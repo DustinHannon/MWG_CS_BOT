@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "framework": null,
+  "installCommand": "cd ChatBot && npm install",
+  "buildCommand": "mkdir -p public && cp -r ChatBot/client/* public/",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api" },
+    { "source": "/health", "destination": "/api" }
+  ]
+}

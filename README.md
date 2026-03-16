@@ -4,11 +4,7 @@ Morgan White Group - Customer Service Chat Bot using OpenAI models
 
 ## Description
 
-MWG CS BOT is a customer service chatbot solution developed for Morgan White Group. It leverages OpenAI's language models to provide automated responses to customer inquiries through a web-based chat interface. The system uses a client-server architecture with a responsive web frontend and Node.js backend to deliver real-time chat capabilities.
-
-## Live Project
-
-The chatbot is accessible at [MWG CS BOT](https://mwgcsbot-apdcavd6ameddtdb.southcentralus-01.azurewebsites.net/)
+MWG CS BOT is a customer service chatbot solution developed for Morgan White Group. It leverages OpenAI's language models to provide automated responses to customer inquiries through a web-based chat interface. The system uses a client-server architecture with a responsive web frontend and a Node.js/Express backend deployed as a Vercel serverless function.
 
 ## Core Features
 
@@ -25,6 +21,8 @@ The chatbot is accessible at [MWG CS BOT](https://mwgcsbot-apdcavd6ameddtdb.sout
 
 ```
 .
+├── api/
+│   └── index.js              # Vercel serverless entry point
 ├── ChatBot/
 │   ├── client/
 │   │   ├── app/
@@ -49,22 +47,39 @@ The chatbot is accessible at [MWG CS BOT](https://mwgcsbot-apdcavd6ameddtdb.sout
 │   │   │   └── openaiService.js
 │   │   ├── main.js
 │   │   └── utils.js
-│   ├── cleanup.sh
-│   ├── package.json
-│   └── web.config
-└── docs/
-    ├── API.md
-    └── ARCHITECTURE.md
+│   └── package.json
+├── docs/
+│   ├── API.md
+│   └── ARCHITECTURE.md
+├── vercel.json
+└── package.json
+```
+
+## Local Development
+
+```bash
+cd ChatBot
+npm install
+# Create .env with OPENAI_API_KEY=your_key
+npm run dev
 ```
 
 ## Deployment
 
-The application is deployed as an Azure Web App using GitHub Actions for continuous deployment. When changes are pushed to the main branch, the application is automatically built, tested, and deployed to Azure.
+The application is deployed on Vercel. Static files are served via Vercel's CDN and the Express API runs as a serverless function.
+
+```bash
+npx vercel --prod
+```
+
+Required environment variables (set in Vercel dashboard):
+- `OPENAI_API_KEY` - OpenAI API key
+- `SESSION_SECRET` - Session cookie signing secret
 
 ## Documentation
 
-- [API Documentation](docs/API.md) - Comprehensive guide to API endpoints, authentication, rate limits, and error handling
-- [Architecture Documentation](docs/ARCHITECTURE.md) - Detailed system design, component structure, data flow, and security implementation
+- [API Documentation](docs/API.md) - API endpoints, authentication, rate limits, and error handling
+- [Architecture Documentation](docs/ARCHITECTURE.md) - System design, component structure, data flow, and security
 
 ## License
 
