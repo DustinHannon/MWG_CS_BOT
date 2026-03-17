@@ -242,7 +242,7 @@ export class ThemeHandler {
             document.head.appendChild(metaThemeColor);
         }
 
-        metaThemeColor.content = isDarkMode ? '#202123' : '#ffffff';
+        metaThemeColor.content = isDarkMode ? '#0f172a' : '#f0f2f5';
     }
 
     /**

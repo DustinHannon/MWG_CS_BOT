@@ -129,14 +129,18 @@ export class ChatUI {
                 retryButton.textContent = 'Retry';
                 retryButton.className = 'retry-button';
                 retryButton.onclick = () => {
-                    // Remove the error message
                     messageElement.remove();
-                    // Trigger form resubmission
                     document.getElementById('prompt-form')?.dispatchEvent(
                         new Event('submit', { cancelable: true })
                     );
                 };
-                messageElement.appendChild(retryButton);
+                // Append to the bubble, not the li
+                const bubble = messageElement.querySelector('.message-bubble');
+                if (bubble) {
+                    bubble.appendChild(retryButton);
+                } else {
+                    messageElement.appendChild(retryButton);
+                }
             }
 
             await this.addMessageToDialogue(messageElement);
@@ -206,35 +210,58 @@ export class ChatUI {
         const messageItem = document.createElement('li');
         messageItem.className = className;
         messageItem.setAttribute('role', 'listitem');
-        
+
+        // Create avatar
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.setAttribute('aria-hidden', 'true');
+
+        if (className.includes('bot-message')) {
+            avatar.classList.add('bot-avatar');
+            const avatarImg = document.createElement('img');
+            avatarImg.src = 'images/logo.png';
+            avatarImg.alt = '';
+            avatarImg.className = 'avatar-img';
+            avatar.appendChild(avatarImg);
+        } else {
+            avatar.classList.add('user-avatar');
+            avatar.textContent = 'You';
+        }
+
+        // Create bubble wrapper
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+
         const messageContent = document.createElement('div');
         messageContent.className = 'message-content';
 
         try {
-            // Format message content with links and markdown
             const formattedContent = this.formatMessageContent(content);
             messageContent.innerHTML = formattedContent;
 
-            // Create timestamp container
-            const timestamp = document.createElement('div');
+            // Create meta container (timestamp + copy)
+            const meta = document.createElement('div');
+            meta.className = 'message-meta';
+
+            const timestamp = document.createElement('span');
             timestamp.className = 'message-timestamp';
             timestamp.textContent = this.formatTimestamp(new Date());
-            
-            messageItem.appendChild(messageContent);
+            meta.appendChild(timestamp);
 
-            // Add copy button inside timestamp container for bot messages
-            if (className.includes('bot-message')) {
-                const copyButton = this.createCopyButton(formattedContent);
-                timestamp.appendChild(copyButton);
-            }
-            
-            messageItem.appendChild(timestamp);
+            // Add copy button for all messages
+            const copyButton = this.createCopyButton(formattedContent);
+            meta.appendChild(copyButton);
+
+            bubble.appendChild(messageContent);
+            bubble.appendChild(meta);
         } catch (error) {
             console.error('Failed to create message element:', error);
-            messageContent.textContent = content; // Fallback to plain text
-            messageItem.appendChild(messageContent);
+            messageContent.textContent = content;
+            bubble.appendChild(messageContent);
         }
 
+        messageItem.appendChild(avatar);
+        messageItem.appendChild(bubble);
         return messageItem;
     }
 
@@ -294,19 +321,22 @@ export class ChatUI {
         const button = document.createElement('button');
         button.className = 'copy-button';
         button.setAttribute('aria-label', 'Copy message');
-        button.innerHTML = '<svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>';
+        button.innerHTML = `<svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>`;
 
         button.addEventListener('click', async () => {
             try {
-                // Strip HTML tags for clipboard
                 const textContent = content.replace(/<[^>]+>/g, '');
                 await navigator.clipboard.writeText(textContent);
-                
-                // Show success feedback
+
+                // Swap icons for success feedback
+                button.querySelector('.copy-icon').style.display = 'none';
+                button.querySelector('.check-icon').style.display = 'block';
                 button.classList.add('copied');
                 button.setAttribute('aria-label', 'Copied!');
-                
+
                 setTimeout(() => {
+                    button.querySelector('.copy-icon').style.display = '';
+                    button.querySelector('.check-icon').style.display = 'none';
                     button.classList.remove('copied');
                     button.setAttribute('aria-label', 'Copy message');
                 }, 2000);
@@ -314,7 +344,7 @@ export class ChatUI {
                 console.error('Failed to copy message:', error);
                 button.classList.add('error');
                 button.setAttribute('aria-label', 'Failed to copy');
-                
+
                 setTimeout(() => {
                     button.classList.remove('error');
                     button.setAttribute('aria-label', 'Copy message');
@@ -419,7 +449,18 @@ export class ChatUI {
             typingIndicator.className = 'bot-message typing-indicator';
             typingIndicator.id = 'typing-indicator';
             typingIndicator.setAttribute('aria-label', 'Bot is typing');
-            
+
+            // Add bot avatar
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar bot-avatar';
+            avatar.setAttribute('aria-hidden', 'true');
+            const avatarImg = document.createElement('img');
+            avatarImg.src = 'images/logo.png';
+            avatarImg.alt = '';
+            avatarImg.className = 'avatar-img';
+            avatar.appendChild(avatarImg);
+            typingIndicator.appendChild(avatar);
+
             const dots = document.createElement('div');
             dots.className = 'typing-dots';
             for (let i = 0; i < 3; i++) {
@@ -427,7 +468,7 @@ export class ChatUI {
                 dot.setAttribute('aria-hidden', 'true');
                 dots.appendChild(dot);
             }
-            
+
             typingIndicator.appendChild(dots);
             this.dialogue.appendChild(typingIndicator);
             this.scrollToBottom();
