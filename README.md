@@ -8,8 +8,11 @@ MWG CS BOT is a customer service chatbot solution developed for Morgan White Gro
 
 ## Core Features
 
-- Real-time chat interface with message history and theme support
+- Modern glassmorphism chat interface with frosted glass panels and smooth animations
+- Chat bubbles with avatars — bot messages left-aligned, user messages right-aligned
 - AI-powered responses using Azure AI Foundry (GPT-5.4) for natural conversation
+- Light/dark theme with sun/moon toggle, DM Sans + Outfit typography
+- Copy-to-clipboard on all messages with icon animation and tooltip
 - Session-based authentication with secure cookie management
 - Comprehensive security measures including:
   - IP and session-based rate limiting

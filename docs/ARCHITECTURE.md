@@ -50,12 +50,13 @@ The application is deployed on Vercel with the Express API running as a serverle
 - Provides update notifications
 
 #### Chat UI Module (client/app/modules/chatUI.js)
+- Chat bubble layout: bot messages left-aligned with logo avatar, user messages right-aligned with accent-colored bubble
+- Copy button on all messages with icon swap animation (copy → checkmark) and tooltip
+- Typing indicator with bot avatar and pulsing dots
+- Message slide-in animations (translateY + opacity)
 - Manages message display and queue-based processing
 - Implements message history lazy loading with pagination
-- Provides copy functionality for bot messages
 - ARIA attributes for accessibility
-- Manages scroll behavior
-- Handles error display with retry buttons
 - Markdown and link formatting
 
 #### Form Handler Module (client/app/modules/formHandler.js)
@@ -68,10 +69,18 @@ The application is deployed on Vercel with the Express API running as a serverle
 
 #### Theme Handler Module (client/app/modules/themeHandler.js)
 - Light/dark theme switching with smooth transitions
+- Sun/moon SVG icon toggle button
 - Persists theme preference in localStorage
 - Syncs with system color scheme preference
 - Updates mobile browser theme color meta tag
 - Keyboard accessible toggle
+
+#### Frontend Design
+- **Aesthetic:** Glassmorphism — frosted glass panels (backdrop-filter blur) over MWG background image
+- **Typography:** DM Sans (body) + Outfit (headings) from Google Fonts
+- **Colors:** MWG blue (#1B4B8F) accent, light mode with visible bg image, dark mode with deep slate tones (#0f172a, #1e293b)
+- **Layout:** Chat bubbles with avatars, floating glass input bar, glass pill link buttons, glass header/footer
+- **Animations:** Message slide-in (translateY), typing pulse, hover states, focus glow on input
 
 ### 2. Server-Side Components
 

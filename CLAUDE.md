@@ -30,7 +30,7 @@ Required environment variables in Vercel dashboard:
 ## Tech Stack
 - **Runtime:** Node.js >= 20.15.1, npm >= 11.0.0
 - **Backend:** Express.js 4.18.2 (ES modules, runs as Vercel serverless function)
-- **Frontend:** Vanilla JS (ES modules), CSS custom properties
+- **Frontend:** Vanilla JS (ES modules), glassmorphism CSS, DM Sans + Outfit fonts
 - **AI:** Azure AI Foundry GPT-5.4 via node-fetch (`https://AZ-UTIL-AI.openai.azure.com/openai/v1/chat/completions`)
 - **Security:** helmet, express-rate-limit, express-session, CORS
 - **Deploy:** Vercel (serverless functions + CDN static serving)
@@ -45,7 +45,7 @@ MWG_CS_BOT/
 │   ├── package.json            # Dependencies & scripts
 │   ├── client/                 # Frontend (copied to public/ at build time by Vercel)
 │   │   ├── index.html          # SPA entry point
-│   │   ├── styles.css          # All styles (light/dark themes)
+│   │   ├── styles.css          # Glassmorphism styles (light/dark themes)
 │   │   ├── service-worker.js   # PWA caching strategies
 │   │   ├── images/             # logo.png, favicon.ico
 │   │   └── app/
@@ -128,3 +128,4 @@ MWG_CS_BOT/
 - **March 2026:** Migrated from Azure Web Apps to Vercel. Removed Azure workflow, web.config, cleanup.sh. Added api/index.js, vercel.json, root package.json. Updated main.js for serverless export, config.js for Vercel CORS/CSP.
 - **March 2026:** Switched from OpenAI GPT-3.5-turbo to Azure AI Foundry GPT-5.4. Updated config.js, openaiService.js, and CSP. Uses `max_completion_tokens` (not `max_tokens`) for GPT-5.4 compatibility.
 - **March 2026:** Connected Better Stack log drain for full untruncated runtime logs.
+- **March 2026:** Frontend redesign — glassmorphism UI, chat bubbles with avatars (bot left/user right), DM Sans + Outfit typography, message slide-in animations, enhanced copy button with tooltip, circular send button, sun/moon theme toggle icons, MWG background image visible through glass panels.
