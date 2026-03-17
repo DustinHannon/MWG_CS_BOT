@@ -1,33 +1,17 @@
 # MWG CS BOT - Claude Code Project Guide
 
 ## Project Overview
-Morgan White Group Customer Service ChatBot - an AI-powered chat interface using OpenAI GPT-3.5-turbo, deployed on Vercel.
+Morgan White Group Customer Service ChatBot - an AI-powered chat interface using Azure AI Foundry (GPT-5.4), deployed on Vercel.
 
 **Repo:** https://github.com/DustinHannon/MWG_CS_BOT
-
-## Migration Status (March 2026)
-**Migrated from Azure Web Apps to Vercel.** The following work has been completed:
-- Removed Azure GitHub Actions workflow (`.github/workflows/main_mwgcsbot.yml`)
-- Removed Azure IIS config (`ChatBot/web.config`) and deployment cleanup script (`ChatBot/cleanup.sh`)
-- Created Vercel serverless entry point (`api/index.js`)
-- Created Vercel config (`vercel.json`) with build command to copy static files
-- Created root `package.json` for ES module support
-- Modified `ChatBot/server/main.js`: exports app, conditional `app.listen()`, conditional `express.static()`, env-based session secret
-- Updated CORS and CSP in `config.js` to allow `*.vercel.app` domains and Google Fonts
-- **NOT YET DEPLOYED** - user needs to run `vercel login` and `vercel --prod` (see steps below)
-
-### Remaining Steps to Complete Deployment
-1. Run `npx vercel login` from project root
-2. Run `npx vercel` to create project and do preview deploy
-3. Add env vars: `npx vercel env add OPENAI_API_KEY` and `npx vercel env add SESSION_SECRET`
-4. Run `npx vercel --prod` for production deployment
-5. Test: page loads, chat works, `/health` returns JSON
+**Live:** https://mwg-cs-bot.vercel.app
+**Logging:** Better Stack (connected via Vercel log drain)
 
 ## Quick Start (Local Development)
 ```bash
 cd ChatBot
 npm install
-# Create .env with OPENAI_API_KEY=your_key
+# Create .env with AZURE_AI_KEY=your_key
 npm run dev    # Development (nodemon)
 npm start      # Production
 ```
@@ -39,16 +23,18 @@ npx vercel          # Preview deployment
 npx vercel --prod   # Production deployment
 ```
 Required environment variables in Vercel dashboard:
-- `OPENAI_API_KEY` - OpenAI API key
-- `SESSION_SECRET` - Stable secret for session cookies (generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
+- `AZURE_AI_KEY` - Azure AI Foundry API key
+- `SESSION_SECRET` - Stable secret for session cookies
+- `AZURE_AI_ENDPOINT` - (optional, not currently used in code)
 
 ## Tech Stack
 - **Runtime:** Node.js >= 20.15.1, npm >= 11.0.0
 - **Backend:** Express.js 4.18.2 (ES modules, runs as Vercel serverless function)
 - **Frontend:** Vanilla JS (ES modules), CSS custom properties
-- **AI:** OpenAI GPT-3.5-turbo via node-fetch
+- **AI:** Azure AI Foundry GPT-5.4 via node-fetch (`https://AZ-UTIL-AI.openai.azure.com/openai/v1/chat/completions`)
 - **Security:** helmet, express-rate-limit, express-session, CORS
 - **Deploy:** Vercel (serverless functions + CDN static serving)
+- **Logging:** Better Stack via Vercel log drain (full untruncated runtime logs)
 
 ## Project Structure
 ```
@@ -74,7 +60,7 @@ MWG_CS_BOT/
 │       ├── config/
 │       │   └── config.js       # Env vars, CORS, CSP, rate limits
 │       ├── services/
-│       │   └── openaiService.js # OpenAI API, caching, rate limiting
+│       │   └── openaiService.js # Azure AI API, caching, rate limiting
 │       └── middleware/
 │           ├── security.js     # Security headers, input validation
 │           └── errorHandler.js # Error codes, APIError class
@@ -82,7 +68,7 @@ MWG_CS_BOT/
 │   ├── API.md                  # API endpoint documentation
 │   └── ARCHITECTURE.md         # System architecture docs
 ├── vercel.json                 # Vercel deployment configuration
-├── package.json                # Root package.json (ES modules)
+├── package.json                # Root package.json (ES modules + runtime deps for serverless)
 └── .gitignore
 ```
 
@@ -92,6 +78,7 @@ MWG_CS_BOT/
 - **Routing:** `vercel.json` rewrites `/api/*` and `/health` to the serverless function; all other routes served from static files
 - **`express.static()` is disabled on Vercel** (wrapped in `if (!process.env.VERCEL)`, handled by CDN instead)
 - **`app.listen()` is disabled on Vercel** (wrapped in `if (!process.env.VERCEL)`, handled by serverless runtime)
+- **Install command:** `npm install && cd ChatBot && npm install` (root deps needed for serverless function module resolution)
 
 ## API Endpoints
 | Method | Path | Description |
@@ -107,8 +94,8 @@ MWG_CS_BOT/
 ### Security (Multi-Layer)
 - **Helmet:** CSP, HSTS, X-Frame-Options, noSniff, XSS filter
 - **CORS:** Restricted to morganwhite.com + vercel.app domains
-- **CSP:** Allows Google Fonts (googleapis.com, gstatic.com), vercel.app domains
-- **Rate Limiting:** Dual-layer (IP-based via express-rate-limit + session/IP in OpenAI service)
+- **CSP:** Allows Google Fonts (googleapis.com, gstatic.com), Azure AI endpoint, vercel.app domains
+- **Rate Limiting:** Dual-layer (IP-based via express-rate-limit + session/IP in AI service)
 - **Session:** Env-based secret (`SESSION_SECRET`), HTTP-only cookies, fingerprinting
 - **Input Validation:** XSS, SQL injection, command injection pattern detection
 
@@ -121,7 +108,8 @@ MWG_CS_BOT/
 ## Environment Variables
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `OPENAI_API_KEY` | Yes | OpenAI API key |
+| `AZURE_AI_KEY` | Yes | Azure AI Foundry API key |
+| `AZURE_AI_DEPLOYMENT` | No | Model deployment name (default: gpt-5.4) |
 | `SESSION_SECRET` | Yes (Vercel) | Stable session cookie secret |
 | `PORT` | No | Server port for local dev (default: 8080) |
 | `NODE_ENV` | No | Environment (default: production) |
@@ -134,6 +122,9 @@ MWG_CS_BOT/
 - `nodemon` for dev auto-restart
 - All error codes defined in `errorHandler.js` ErrorCodes object
 - Changes to `ChatBot/client/` are what users see - `public/` is generated at deploy time
+- When adding env vars to Vercel via CLI, use `printf` not `echo` to avoid trailing newlines
 
 ## Change Log
 - **March 2026:** Migrated from Azure Web Apps to Vercel. Removed Azure workflow, web.config, cleanup.sh. Added api/index.js, vercel.json, root package.json. Updated main.js for serverless export, config.js for Vercel CORS/CSP.
+- **March 2026:** Switched from OpenAI GPT-3.5-turbo to Azure AI Foundry GPT-5.4. Updated config.js, openaiService.js, and CSP. Uses `max_completion_tokens` (not `max_tokens`) for GPT-5.4 compatibility.
+- **March 2026:** Connected Better Stack log drain for full untruncated runtime logs.
