@@ -1,21 +1,22 @@
 # MWG CS BOT
 
-Morgan White Group - Customer Service Chat Bot using OpenAI models
+Morgan White Group - Customer Service Chat Bot using Azure AI Foundry
 
 ## Description
 
-MWG CS BOT is a customer service chatbot solution developed for Morgan White Group. It leverages OpenAI's language models to provide automated responses to customer inquiries through a web-based chat interface. The system uses a client-server architecture with a responsive web frontend and a Node.js/Express backend deployed as a Vercel serverless function.
+MWG CS BOT is a customer service chatbot solution developed for Morgan White Group. It leverages Azure AI Foundry's GPT-5.4 model to provide automated responses to customer inquiries through a web-based chat interface. The system uses a client-server architecture with a responsive web frontend and a Node.js/Express backend deployed as a Vercel serverless function.
 
 ## Core Features
 
 - Real-time chat interface with message history and theme support
-- AI-powered responses using OpenAI models for natural conversation
+- AI-powered responses using Azure AI Foundry (GPT-5.4) for natural conversation
 - Session-based authentication with secure cookie management
 - Comprehensive security measures including:
   - IP and session-based rate limiting
   - Request validation and sanitization
   - Security headers and CORS protection
 - Performance optimizations through response caching and request throttling
+- Full runtime logging via Better Stack
 
 ## Project Structure
 
@@ -60,7 +61,7 @@ MWG CS BOT is a customer service chatbot solution developed for Morgan White Gro
 ```bash
 cd ChatBot
 npm install
-# Create .env with OPENAI_API_KEY=your_key
+# Create .env with AZURE_AI_KEY=your_key
 npm run dev
 ```
 
@@ -73,7 +74,7 @@ npx vercel --prod
 ```
 
 Required environment variables (set in Vercel dashboard):
-- `OPENAI_API_KEY` - OpenAI API key
+- `AZURE_AI_KEY` - Azure AI Foundry API key
 - `SESSION_SECRET` - Session cookie signing secret
 
 ## Documentation

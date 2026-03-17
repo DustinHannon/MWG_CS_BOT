@@ -1,11 +1,11 @@
 # API Documentation
 
 ## Overview
-The MWG CS BOT API provides endpoints for chat functionality using OpenAI's language models. This document details all available endpoints, their request/response formats, and error handling.
+The MWG CS BOT API provides endpoints for chat functionality using Azure AI Foundry's GPT-5.4 model. This document details all available endpoints, their request/response formats, and error handling.
 
 ## Base URL
 ```
-Production: https://<your-vercel-project>.vercel.app/api
+Production: https://mwg-cs-bot.vercel.app/api
 Local: http://localhost:8080/api
 ```
 
@@ -138,9 +138,9 @@ Rate limit responses include:
 - MISSING_FIELD: Required field missing
 - INVALID_FORMAT: Wrong data format
 
-### OpenAI Specific Errors
-- OPENAI_API_ERROR: OpenAI API error
-- OPENAI_RATE_LIMIT: OpenAI rate limit hit
+### AI Service Errors
+- OPENAI_API_ERROR: Azure AI API error
+- OPENAI_RATE_LIMIT: Azure AI rate limit hit
 - OPENAI_CONTEXT_LENGTH: Input too long
 
 ### Session Errors
@@ -161,3 +161,4 @@ All responses include:
 - The API runs as a Vercel serverless function via `api/index.js`
 - In-memory session and rate limit stores are ephemeral across serverless instances
 - `SESSION_SECRET` environment variable is required for consistent session cookies
+- Runtime logs are streamed to Better Stack via Vercel log drain

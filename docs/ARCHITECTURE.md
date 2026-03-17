@@ -1,22 +1,22 @@
 # Architecture Documentation
 
 ## System Overview
-MWG CS BOT is a client-server application that provides AI-powered customer service chat functionality. The system uses OpenAI's language models to generate contextually relevant responses to customer inquiries, implementing security measures, caching mechanisms, and error handling.
+MWG CS BOT is a client-server application that provides AI-powered customer service chat functionality. The system uses Azure AI Foundry's GPT-5.4 model to generate contextually relevant responses to customer inquiries, implementing security measures, caching mechanisms, and error handling.
 
 The application is deployed on Vercel with the Express API running as a serverless function and static files served via Vercel's CDN.
 
 ## Architecture Diagram
 ```
-┌─────────────────┐     ┌────────────────────┐     ┌─────────────┐
-│   Web Client    │────▶│  Vercel Serverless  │────▶│  OpenAI API │
-│  (JavaScript)   │◀────│  Function (Express) │◀────│             │
-└─────────────────┘     └────────────────────┘     └─────────────┘
-        │                        │
-        │                        │
-┌───────────────┐    ┌─────────────────┐    ┌────────────────┐
-│Service Worker │    │ Memory Storage  │    │  Vercel CDN    │
-│(Static Cache) │    │ - Sessions      │    │ (Static Files) │
-└───────────────┘    │ - Rate Limits   │    └────────────────┘
+┌─────────────────┐     ┌────────────────────┐     ┌──────────────────┐
+│   Web Client    │────▶│  Vercel Serverless  │────▶│  Azure AI        │
+│  (JavaScript)   │◀────│  Function (Express) │◀────│  Foundry (GPT-5.4│)
+└─────────────────┘     └────────────────────┘     └──────────────────┘
+        │                        │                          │
+        │                        │                          │
+┌───────────────┐    ┌─────────────────┐    ┌────────────────┐    ┌──────────────┐
+│Service Worker │    │ Memory Storage  │    │  Vercel CDN    │    │ Better Stack │
+│(Static Cache) │    │ - Sessions      │    │ (Static Files) │    │ (Log Drain)  │
+└───────────────┘    │ - Rate Limits   │    └────────────────┘    └──────────────┘
                      │ - Response Cache│
                      └─────────────────┘
 ```
@@ -28,6 +28,7 @@ The application is deployed on Vercel with the Express API running as a serverle
 - **Static files:** `ChatBot/client/` is copied to `public/` at build time via `vercel.json` buildCommand
 - **Routing:** `vercel.json` rewrites `/api/*` and `/health` to the serverless function
 - **All other routes** are served as static files from the CDN
+- **Install command:** `npm install && cd ChatBot && npm install` (root deps needed for serverless module resolution)
 
 ### Key Vercel Adaptations
 - `express.static()` is disabled on Vercel (wrapped in `if (!process.env.VERCEL)`)
@@ -85,8 +86,12 @@ The application is deployed on Vercel with the Express API running as a serverle
 - Health check endpoint
 - Graceful shutdown handling (local dev only)
 
-#### OpenAI Service (server/services/openaiService.js)
-- Manages OpenAI API communication via node-fetch
+#### AI Service (server/services/openaiService.js)
+- Manages Azure AI Foundry API communication via node-fetch
+- Endpoint: `https://AZ-UTIL-AI.openai.azure.com/openai/v1/chat/completions`
+- Model: GPT-5.4 (configurable via `AZURE_AI_DEPLOYMENT` env var)
+- Uses `max_completion_tokens` parameter (required by GPT-5.4)
+- Authentication via Bearer token (`AZURE_AI_KEY`)
 - In-memory response caching (SHA-256 key: session + prompt, 1-hour TTL)
 - Dual-layer rate limiting:
   - Session: 50 req/hr, 100K tokens/hr
@@ -113,9 +118,9 @@ The application is deployed on Vercel with the Express API running as a serverle
 #### Configuration (server/config/config.js)
 - Environment variable loading via dotenv
 - CORS: morganwhite.com + vercel.app domains
-- CSP: self, Google Fonts, OpenAI API, MWG domains, Vercel domains
+- CSP: self, Google Fonts, Azure AI endpoint, MWG domains, Vercel domains
 - Rate limit settings
-- OpenAI model and token configuration
+- AI model deployment and token configuration
 - Config validation on startup
 
 #### Context Enrichment (server/utils.js)
@@ -138,7 +143,7 @@ The application is deployed on Vercel with the Express API running as a serverle
                            └─▶ Cache check (SHA-256 key)
                                └─▶ Request delay enforcement
                                    └─▶ Context enrichment (utils.js)
-                                       └─▶ OpenAI API request
+                                       └─▶ Azure AI Foundry API request
                                            └─▶ Response caching
                                                └─▶ Rate limit counter update
                                                    └─▶ Client display
@@ -176,6 +181,11 @@ The application is deployed on Vercel with the Express API running as a serverle
 - CSP with specific source allowlists
 - Input validation against XSS, SQL injection, command injection patterns
 - Unicode normalization and zero-width character stripping
+
+## Monitoring & Logging
+- Runtime logs streamed to Better Stack via Vercel log drain
+- Full untruncated error logs with stack traces available in Better Stack UI
+- Health check endpoint at `/health` for uptime monitoring
 
 ## Serverless Considerations
 
