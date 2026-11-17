@@ -34,7 +34,7 @@ import { APIError, ErrorCodes } from '../middleware/errorHandler.js';
 
 // Load environment variables from .env file
 // This allows for different configurations in different environments
-dotenv.config();
+dotenv.config({ quiet: true }); // quiet: suppress dotenv >=17 "injected env" banner in runtime logs
 
 /**
  * Main configuration object
