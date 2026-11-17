@@ -65,3 +65,7 @@ release.zip
 
 # Coverage directory used by tools like istanbul
 coverage
+.vercel
+
+# Claude Code project instructions (local only)
+**/CLAUDE.md
