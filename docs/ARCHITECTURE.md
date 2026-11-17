@@ -1,7 +1,7 @@
 # Architecture Documentation
 
 ## System Overview
-MWG CS BOT is a client-server application that provides AI-powered customer service chat functionality. The system uses Azure AI Foundry's GPT-5.4 model to generate contextually relevant responses to customer inquiries, implementing security measures, caching mechanisms, and error handling.
+MWG CS BOT is a client-server application that provides AI-powered customer service chat functionality. The system uses Azure AI Foundry's GPT-5.6 Terra model (`gpt-5.6-terra`) to generate contextually relevant responses to customer inquiries, implementing security measures, caching mechanisms, and error handling.
 
 The application is deployed on Vercel with the Express API running as a serverless function and static files served via Vercel's CDN.
 
@@ -9,7 +9,7 @@ The application is deployed on Vercel with the Express API running as a serverle
 ```
 ┌─────────────────┐     ┌────────────────────┐     ┌──────────────────┐
 │   Web Client    │────▶│  Vercel Serverless  │────▶│  Azure AI        │
-│  (JavaScript)   │◀────│  Function (Express) │◀────│  Foundry (GPT-5.4│)
+│  (JavaScript)   │◀────│  Function (Express) │◀────│  Foundry (GPT)   │
 └─────────────────┘     └────────────────────┘     └──────────────────┘
         │                        │                          │
         │                        │                          │
@@ -98,8 +98,9 @@ The application is deployed on Vercel with the Express API running as a serverle
 #### AI Service (server/services/openaiService.js)
 - Manages Azure AI Foundry API communication via node-fetch
 - Endpoint: `https://AZ-UTIL-AI.openai.azure.com/openai/v1/chat/completions`
-- Model: GPT-5.4 (configurable via `AZURE_AI_DEPLOYMENT` env var)
-- Uses `max_completion_tokens` parameter (required by GPT-5.4)
+- Model: `gpt-5.6-terra` (configurable via `AZURE_AI_DEPLOYMENT` env var; `gpt-5.5` and `gpt-6-astra` are also deployed on the resource)
+- Uses `max_completion_tokens` parameter (required by current GPT deployments)
+- Sends no `temperature` / `presence_penalty` / `frequency_penalty`: current deployments reject non-default values with a 400
 - Authentication via Bearer token (`AZURE_AI_KEY`)
 - In-memory response caching (SHA-256 key: session + prompt, 1-hour TTL)
 - Dual-layer rate limiting:

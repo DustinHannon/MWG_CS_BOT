@@ -1,7 +1,7 @@
 # API Documentation
 
 ## Overview
-The MWG CS BOT API provides endpoints for chat functionality using Azure AI Foundry's GPT-5.4 model. This document details all available endpoints, their request/response formats, and error handling.
+The MWG CS BOT API provides endpoints for chat functionality using Azure AI Foundry's GPT-5.6 Terra model. This document details all available endpoints, their request/response formats, and error handling.
 
 ## Base URL
 ```

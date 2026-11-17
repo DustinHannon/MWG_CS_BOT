@@ -4,13 +4,13 @@ Morgan White Group - Customer Service Chat Bot using Azure AI Foundry
 
 ## Description
 
-MWG CS BOT is a customer service chatbot solution developed for Morgan White Group. It leverages Azure AI Foundry's GPT-5.4 model to provide automated responses to customer inquiries through a web-based chat interface. The system uses a client-server architecture with a responsive web frontend and a Node.js/Express backend deployed as a Vercel serverless function.
+MWG CS BOT is a customer service chatbot solution developed for Morgan White Group. It leverages Azure AI Foundry's GPT-5.6 Terra model to provide automated responses to customer inquiries through a web-based chat interface. The system uses a client-server architecture with a responsive web frontend and a Node.js/Express backend deployed as a Vercel serverless function.
 
 ## Core Features
 
 - Modern glassmorphism chat interface with frosted glass panels and smooth animations
 - Chat bubbles with avatars — bot messages left-aligned, user messages right-aligned
-- AI-powered responses using Azure AI Foundry (GPT-5.4) for natural conversation
+- AI-powered responses using Azure AI Foundry (GPT-5.6 Terra) for natural conversation
 - Light/dark theme with sun/moon toggle, DM Sans + Outfit typography
 - Copy-to-clipboard on all messages with icon animation and tooltip
 - Session-based authentication with secure cookie management

@@ -82,9 +82,8 @@ class OpenAIService {
 
                 this.fetch = fetch;
                 this.apiKey = config.azureAiKey;
-                this.deployment = config.ai?.deployment || 'gpt-5.4';
+                this.deployment = config.ai?.deployment || 'gpt-5.6-terra';
                 this.maxTokens = config.ai?.maxTokens || 1000;
-                this.temperature = config.ai?.temperature || 0.7;
                 this.cacheDuration = config.ai?.cacheDuration || 3600000; // 1 hour
                 this.requestDelay = config.ai?.requestDelay || 1000; // 1 second between requests
                 this.enrichUserPromptWithContext = enrichUserPromptWithContext;
@@ -580,10 +579,9 @@ class OpenAIService {
                 body: JSON.stringify({
                     model: this.deployment,
                     messages: [{ role: 'user', content: enrichedPrompt }],
-                    max_completion_tokens: this.maxTokens,
-                    temperature: this.temperature,
-                    presence_penalty: 0.6,
-                    frequency_penalty: 0.5
+                    max_completion_tokens: this.maxTokens
+                    // No temperature / presence_penalty / frequency_penalty: current Azure
+                    // GPT deployments (gpt-5.5+) reject non-default sampling values with a 400.
                 }),
             });
 

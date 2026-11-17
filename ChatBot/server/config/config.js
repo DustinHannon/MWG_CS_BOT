@@ -155,7 +155,7 @@ const config = {
     // Azure AI Foundry configuration
     // Settings for the chat model integration
     ai: {
-        deployment: process.env.AZURE_AI_DEPLOYMENT || 'gpt-5.4',
+        deployment: process.env.AZURE_AI_DEPLOYMENT || 'gpt-5.6-terra',
         maxTokens: 1000
     }
 };
