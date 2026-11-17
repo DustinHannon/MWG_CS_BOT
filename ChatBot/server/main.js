@@ -58,6 +58,14 @@ const __dirname = path.dirname(__filename);
 // Initialize Express application
 const app = express();
 
+// Vercel terminates TLS at its edge and forwards requests to the function over HTTP,
+// setting X-Forwarded-Proto/X-Forwarded-For (exactly one proxy hop). Without trusting it,
+// req.secure is false and express-session refuses to emit the `secure` session cookie.
+// Only enabled on Vercel so local runs never trust client-supplied forwarding headers.
+if (process.env.VERCEL) {
+    app.set('trust proxy', 1);
+}
+
 // Security middleware configuration
 // Helmet helps secure Express apps by setting various HTTP headers
 app.use(helmet({

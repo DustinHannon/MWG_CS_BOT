@@ -161,4 +161,5 @@ All responses include:
 - The API runs as a Vercel serverless function via `api/index.js`
 - In-memory session and rate limit stores are ephemeral across serverless instances
 - `SESSION_SECRET` environment variable is required for consistent session cookies
+- `trust proxy` is set to 1 on Vercel so the `Secure` `mwg_session` cookie (`HttpOnly`, `SameSite=Strict`, 24h) is issued behind Vercel's TLS-terminating proxy; `POST /api/session` returns it in `Set-Cookie`
 - Runtime logs are streamed to Better Stack via Vercel log drain

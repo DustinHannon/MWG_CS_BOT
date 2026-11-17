@@ -35,6 +35,7 @@ The application is deployed on Vercel with the Express API running as a serverle
 - `app.listen()` is disabled on Vercel (Express app is exported for serverless runtime)
 - Service worker route and SPA fallback are local-dev only
 - Session secret uses `SESSION_SECRET` env var for consistency across serverless instances
+- `app.set('trust proxy', 1)` is enabled on Vercel only (`process.env.VERCEL`). Vercel terminates TLS at its edge and forwards over HTTP with `X-Forwarded-Proto`/`X-Forwarded-For` (one proxy hop). Without it, `req.secure` is false and express-session silently omits the `Secure` session cookie. Not enabled locally, so client-supplied forwarding headers are never trusted outside Vercel.
 
 ## Components
 
@@ -174,8 +175,9 @@ The application is deployed on Vercel with the Express API running as a serverle
 ### Session Security
 - Session creation with SHA-256 fingerprinting (IP + User-Agent + session ID)
 - IP tracking and change detection
-- HTTP-only, secure, strict SameSite cookies
+- HTTP-only, secure, strict SameSite cookies (`mwg_session`); the `Secure` flag relies on `trust proxy` being set on Vercel
 - 24-hour cookie max age
+- Session data lives in the in-memory store, so the cookie persists but the session record is per serverless instance; a request routed to a different instance gets a fresh session
 - `SESSION_SECRET` environment variable for consistent signing across instances
 
 ### Rate Limiting
